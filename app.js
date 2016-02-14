@@ -58,6 +58,11 @@ appManagerMSF.config(function($routeProvider) {
 		  		 controller: "availabledataController",
 		  		 css: "modules/availabledata/availabledataCss.css"
 		  });
+
+	$routeProvider.when('/sqlavailabledata', {
+		templateUrl: "modules/sqlavailabledata/sqlavailabledataView.html",
+		controller: "sqlAvailableDataController"
+	});
 	
 	  $routeProvider.otherwise({
 	        redirectTo: '/'

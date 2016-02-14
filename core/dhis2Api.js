@@ -248,3 +248,13 @@ Dhis2Api.factory("DataElementGroupsUID",['$resource','commonvariable', function 
 	{},
   { get: { method: "GET"} });
 }]);
+
+Dhis2Api.factory("SqlView",['$resource', 'commonvariable', function($resource, commonvariable) {
+	return $resource( commonvariable.url + "sqlViews/:viewId",
+		{viewId:'@id'}, {post: {method: "POST"}});
+}]);
+
+Dhis2Api.factory("SqlViewData",['$resource', 'commonvariable', function($resource, commonvariable) {
+	return $resource( commonvariable.url + "sqlViews/:viewId/data.json",
+		{viewId:'viewId'});
+}]);
