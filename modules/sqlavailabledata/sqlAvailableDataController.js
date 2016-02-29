@@ -1,6 +1,68 @@
-appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', function($scope, sqlService) {
+appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 'meUser', 'Organisationunit',
+    function($scope, sqlService, meUser, Organisationunit) {
 
-    $scope.array = "la fila es ";
+    var dataViewOrgunits;
+
+    // First of all, get user orgunits
+    meUser.get().$promise.then(function(user) {
+        dataViewOrgunits = user.dataViewOrganisationUnits;
+
+        angular.forEach(dataViewOrgunits, function(dataViewOrgunit) {
+            var dataViewOrgUnitPromise = Organisationunit.get({filter: 'id:eq:' + dataViewOrgunit.id}).$promise;
+
+            dataViewOrgUnitPromise.then(function(orgunitResult) {
+                // Orgunit contains "id" and "level" fields
+                var orgunit = orgunitResult.organisationUnits[0];
+                console.log(orgunitResult);
+
+                var query = constructQuery(orgunit);
+                console.log(query);
+
+                sqlService.executeSqlView(query).then(function(queryResult) {
+                    console.log(queryResult);
+                    var result = queryResult.headers[0].column;
+                    $scope.array = $scope.array + result;
+                    console.log($scope.array);
+                });
+            });
+
+
+        });
+    });
+
+    var constructQuery = function(orgunit) {
+        var orgunitId = orgunit.id;
+        var orgunitLevel = orgunit.level;
+        var dataLevel = parseInt(orgunitLevel) + 1;
+
+        var query = "SELECT max(ou.uid) AS uid, max(ou.name) AS name, a.period, sum(a.count), storedby FROM ( " +
+                        "SELECT _ou.idlevel" + dataLevel + " AS orgunitid, _pe.monthly AS period, count(*), 'pentaho' AS storedby " +
+                            "FROM datavalue dv " +
+                            "INNER JOIN _orgunitstructure _ou ON dv.sourceid = _ou.organisationunitid " +
+                            "INNER JOIN _periodstructure _pe ON dv.periodid = _pe.periodid " +
+                            "WHERE _ou.uidlevel" + orgunitLevel + " = '" + orgunitId + "' " +
+                            "AND _pe.monthly IN (" + getPeriodArray() + ") " +
+                            "AND storedby = 'pentaho' " +
+                            "GROUP BY _ou.idlevel" + dataLevel + ", _pe.monthly " +
+                        "UNION " +
+                        "SELECT _ou.idlevel" + dataLevel + " AS orgunitid, _pe.monthly AS period, count(*), 'others' AS storedby " +
+                            "FROM datavalue dv " +
+                            "INNER JOIN _orgunitstructure _ou ON dv.sourceid = _ou.organisationunitid " +
+                            "INNER JOIN _periodstructure _pe ON dv.periodid = _pe.periodid " +
+                            "WHERE _ou.uidlevel" + orgunitLevel + " = '" + orgunitId + "' " +
+                            "AND _pe.monthly IN (" + getPeriodArray() + ") " +
+                            "AND storedby != 'pentaho' " +
+                            "GROUP BY _ou.idlevel" + dataLevel + ", _pe.monthly " +
+                        ") a " +
+                        "INNER JOIN organisationunit ou ON a.orgunitid = ou.organisationunitid " +
+                        "GROUP BY a.orgunitid, a.period, a.storedby;";
+
+        return query;
+    }
+
+    var getPeriodArray = function() {
+        return "'201506', '201507', '201507', '201509', '201510', '201511', '201512'";
+    }
 
     $scope.execute = function() {
         sqlService.executeSqlView($scope.query).then(function(queryResult) {
