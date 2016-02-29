@@ -61,7 +61,23 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 
     }
 
     var getPeriodArray = function() {
-        return "'201506', '201507', '201507', '201509', '201510', '201511', '201512'";
+        var today = new Date();
+        var indexMonth = today.getMonth ();
+        var indexYear = today.getFullYear();
+
+        var periods = [];
+
+        // Get last 12 months, excluding current month;
+        for (var i = 0; i < 12; i ++) {
+            indexMonth--;
+            if (indexMonth < 0){
+                indexYear--;
+                indexMonth = 11;
+            }
+            // Force month number to have the format '01', '02', ..., '12'
+            periods.push("'" + indexYear + ("0" + (indexMonth + 1)).slice(-2) + "'");
+        }
+        return periods.join(",");
     }
 
     $scope.execute = function() {
