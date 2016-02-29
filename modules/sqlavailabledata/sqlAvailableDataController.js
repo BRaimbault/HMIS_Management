@@ -15,7 +15,7 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 
                 var orgunit = orgunitResult.organisationUnits[0];
                 console.log(orgunitResult);
 
-                var query = constructQuery(orgunit);
+                var query = getQueryForOrgunit(orgunit);
                 console.log(query);
 
                 sqlService.executeSqlView(query).then(function(queryResult) {
@@ -30,11 +30,21 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 
         });
     });
 
-    var constructQuery = function(orgunit) {
+    var getQueryForChildren = function (orgunit){
         var orgunitId = orgunit.id;
         var orgunitLevel = orgunit.level;
         var dataLevel = parseInt(orgunitLevel) + 1;
+        return constructQuery(orgunitId, orgunitLevel, dataLevel);
+    };
 
+    var getQueryForOrgunit = function (orgunit){
+        var orgunitId = orgunit.id;
+        var orgunitLevel = orgunit.level;
+        var dataLevel = orgunitLevel;
+        return constructQuery(orgunitId, orgunitLevel, dataLevel);
+    };
+
+    var constructQuery = function(orgunitId, orgunitLevel, dataLevel) {
         var query = "SELECT max(ou.uid) AS uid, max(ou.name) AS name, a.period, sum(a.count), storedby FROM ( " +
                         "SELECT _ou.idlevel" + dataLevel + " AS orgunitid, _pe.monthly AS period, count(*), 'pentaho' AS storedby " +
                             "FROM datavalue dv " +
