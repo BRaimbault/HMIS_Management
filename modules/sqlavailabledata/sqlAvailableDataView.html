@@ -1,7 +1,16 @@
 <h2>{{ 'AVAILABLE_DATA' | translate}}</h2>
 
-<button ng-click='execute()'>Execute</button>
-
-<p>{{array}}</p>
-
-<input ng-model="query">
+<table class="table table-bordered table-condensed table-hover">
+    <thead>
+    <tr>
+        <th class="orgunit">{{ 'ORGANISATIONUNIT_LABEL' | translate}}</th>
+        <th ng-repeat="pe in periods">{{pe}}</th>
+    </tr>
+    </thead>
+    <tbody>
+        <tr ng-repeat="row in tableRows">
+            <td>{{row.name}}</td>
+            <td ng-repeat="period in row.data">{{period.pentaho}}/{{period.others}}</td>
+        </tr>
+    </tbody>
+</table>

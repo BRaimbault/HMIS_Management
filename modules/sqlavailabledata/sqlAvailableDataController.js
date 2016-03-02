@@ -1,34 +1,105 @@
-appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 'meUser', 'Organisationunit',
-    function($scope, sqlService, meUser, Organisationunit) {
+appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 'meUser', 'Organisationunit', function($scope, sqlService, meUser, Organisationunit) {
 
-    var dataViewOrgunits;
+    $scope.periods = [];
+    $scope.tableRows = [];
+    var tempChildArray = [];
 
     // First of all, get user orgunits
     meUser.get().$promise.then(function(user) {
         dataViewOrgunits = user.dataViewOrganisationUnits;
 
+        var dataViewOrgunitNum = dataViewOrgunits.length;
+        var index = 0;
         angular.forEach(dataViewOrgunits, function(dataViewOrgunit) {
             var dataViewOrgUnitPromise = Organisationunit.get({filter: 'id:eq:' + dataViewOrgunit.id}).$promise;
 
             dataViewOrgUnitPromise.then(function(orgunitResult) {
                 // Orgunit contains "id" and "level" fields
                 var orgunit = orgunitResult.organisationUnits[0];
-                console.log(orgunitResult);
 
                 var query = getQueryForOrgunit(orgunit);
-                console.log(query);
-
                 sqlService.executeSqlView(query).then(function(queryResult) {
-                    console.log(queryResult);
-                    var result = queryResult.headers[0].column;
-                    $scope.array = $scope.array + result;
-                    console.log($scope.array);
+                    var rowArray = readQueryResult(queryResult);
+                    $scope.tableRows.push(rowArray[0]);
+
+                    var childQuery = getQueryForChildren(orgunit);
+                    sqlService.executeSqlView(childQuery).then(function(childResult){
+                        var childArray = readQueryResult(childResult);
+                        tempChildArray.push(childArray);
+
+                        // Increment the counter
+                        index++;
+
+                        // Check if last orgunit
+                        if(index === dataViewOrgunitNum){
+                            console.log("get last one");
+                            $scope.tableRows = sortByName($scope.tableRows);
+                            angular.forEach(tempChildArray, function(child){
+                                includeChildren(child, orgunit.id);
+                            });
+                        }
+
+                    });
                 });
             });
 
 
         });
     });
+
+    var readQueryResult = function(data){
+        var orgunits = {};
+        angular.forEach(data.rows, function(row){
+            var id = row[0];
+            var name = row[1];
+            var period = row[2];
+            var value = row[3];
+            var storedby = row[4];
+
+            if(orgunits[id] === undefined){
+                orgunits[id] = {
+                    id: id,
+                    name: name,
+                    data: {}
+                }
+                angular.forEach($scope.periods, function(pe){
+                    // Remove quotes from period
+                    pe = pe.replace(/'/g, "");
+                    orgunits[id].data[pe] = {others: 0, pentaho: 0};
+                });
+            }
+            orgunits[id].data[period][storedby] = parseInt(value);
+        });
+        // Convert into an array
+        var result = $.map(orgunits, function(value, index){
+            return [value];
+        });
+        return result;
+    };
+
+    var sortByName = function(array){
+        return array.sort(function(a, b) {
+            if(a.name < b.name) return -1;
+            else if (a.name > b.name) return 1;
+            else return 0;
+        });
+    };
+
+    var includeChildren = function(children, parentId){
+        children = sortByName(children);
+        // Look for parent
+        var parentIndex;
+        angular.forEach($scope.tableRows, function(row, index){
+            if(row.id === parentId) {
+                parentIndex = index + 1;
+            }
+        });
+
+        angular.forEach(children, function(child){
+            $scope.tableRows.splice(parentIndex, 0, child);
+            parentIndex++;
+        })
+    }
 
     var getQueryForChildren = function (orgunit){
         var orgunitId = orgunit.id;
@@ -87,15 +158,8 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 
             // Force month number to have the format '01', '02', ..., '12'
             periods.push("'" + indexYear + ("0" + (indexMonth + 1)).slice(-2) + "'");
         }
+        $scope.periods = periods.sort();
         return periods.join(",");
     }
-
-    $scope.execute = function() {
-        sqlService.executeSqlView($scope.query).then(function(queryResult) {
-            var result = queryResult.headers[0].column;
-            $scope.array = $scope.array + result;
-            console.log($scope.array);
-        });
-    }
-
+    
 }]);
