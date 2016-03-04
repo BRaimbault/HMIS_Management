@@ -3,8 +3,12 @@ appManagerMSF.factory('sqlService',["SqlView", "SqlViewData", function(SqlView, 
     var sqlQuery = "SELECT organisationunitid FROM organisationunit;";
 
     var createPayload = function(sqlQuery) {
-        return {"name":"test3","sqlQuery":sqlQuery,
-            "displayName":"test3",
+        // Generate a random name, based on a random integer.
+        // Probability of duplicity: 1 / 100.000
+        var name = "query" + Math.floor(Math.random() * 100000);
+
+        return {"name":name,"sqlQuery":sqlQuery,
+            "displayName":name,
             "publicAccess":"rw------",
             "type":"QUERY",
             "externalAccess":false,
