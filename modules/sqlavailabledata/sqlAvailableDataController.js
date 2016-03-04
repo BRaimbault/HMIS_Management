@@ -171,11 +171,14 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 
     }
 
     $scope.clickOrgunit = function(orgunit){
-        var childQuery = getQueryForChildren(orgunit);
-        sqlService.executeSqlView(childQuery).then(function(childResult) {
-            var childArray = readQueryResult(childResult);
-            includeChildren(childArray, orgunit.id);
-        })
+        if (!orgunit.childrenLoaded == true) {
+            orgunit.childrenLoaded = true;
+            var childQuery = getQueryForChildren(orgunit);
+            sqlService.executeSqlView(childQuery).then(function (childResult) {
+                var childArray = readQueryResult(childResult);
+                includeChildren(childArray, orgunit.id);
+            })
+        }
     }
 
 }]);
