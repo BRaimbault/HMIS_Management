@@ -10,7 +10,7 @@
     <tbody>
         <tr ng-repeat="orgunit in tableRows" ng-click="clickOrgunit(orgunit)"
                 ng-show="{{ orgunit.relativeLevel == 0 || (orgunit.parents) }}">
-            <td>{{orgunit.name}}</td>
+            <td class="level{{ orgunit.level }}" style="text-indent: {{orgunit.relativeLevel}}em">{{orgunit.name}}</td>
             <td ng-repeat="period in orgunit.data">{{period.pentaho}}/{{period.others}}</td>
         </tr>
     </tbody>
