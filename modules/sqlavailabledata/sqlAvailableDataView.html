@@ -8,9 +8,9 @@
     </tr>
     </thead>
     <tbody>
-        <tr ng-repeat="row in tableRows">
-            <td>{{row.name}}</td>
-            <td ng-repeat="period in row.data">{{period.pentaho}}/{{period.others}}</td>
+        <tr ng-repeat="orgunit in tableRows" ng-click="clickOrgunit(orgunit)">
+            <td>{{orgunit.name}}</td>
+            <td ng-repeat="period in orgunit.data">{{period.pentaho}}/{{period.others}}</td>
         </tr>
     </tbody>
 </table>

@@ -52,14 +52,16 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 
         angular.forEach(data.rows, function(row){
             var id = row[0];
             var name = row[1];
-            var period = row[2];
-            var value = row[3];
-            var storedby = row[4];
+            var level = row[2]
+            var period = row[3];
+            var value = row[4];
+            var storedby = row[5];
 
             if(orgunits[id] === undefined){
                 orgunits[id] = {
                     id: id,
                     name: name,
+                    level: level,
                     data: {}
                 }
                 angular.forEach($scope.periods, function(pe){
@@ -115,8 +117,14 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 
         return constructQuery(orgunitId, orgunitLevel, dataLevel);
     };
 
+/**
+ * @param orgunitId
+ * @param orgunitLevel
+ * @param dataLevel
+ * @returns The response has the following structure:  uid || name || level || period || value || storedby
+ */
     var constructQuery = function(orgunitId, orgunitLevel, dataLevel) {
-        var query = "SELECT max(ou.uid) AS uid, max(ou.name) AS name, a.period, sum(a.count), storedby FROM ( " +
+        var query = "SELECT max(ou.uid) AS uid, max(ou.name) AS name, max(ou.hierarchylevel) AS level, a.period, sum(a.count), storedby FROM ( " +
                         "SELECT _ou.idlevel" + dataLevel + " AS orgunitid, _pe.monthly AS period, count(*), 'pentaho' AS storedby " +
                             "FROM datavalue dv " +
                             "INNER JOIN _orgunitstructure _ou ON dv.sourceid = _ou.organisationunitid " +
@@ -161,5 +169,13 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 
         $scope.periods = periods.sort();
         return periods.join(",");
     }
-    
+
+    $scope.clickOrgunit = function(orgunit){
+        var childQuery = getQueryForChildren(orgunit);
+        sqlService.executeSqlView(childQuery).then(function(childResult) {
+            var childArray = readQueryResult(childResult);
+            includeChildren(childArray, orgunit.id);
+        })
+    }
+
 }]);
