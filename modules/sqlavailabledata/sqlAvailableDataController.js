@@ -1,8 +1,11 @@
-appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 'meUser', 'Organisationunit', function($scope, sqlService, meUser, Organisationunit) {
+appManagerMSF.controller('sqlAvailableDataController', ['$scope', '$parse', 'sqlService', 'meUser', 'Organisationunit', function($scope, $parse, sqlService, meUser, Organisationunit) {
 
     $scope.periods = [];
     $scope.tableRows = [];
     var tempChildArray = [];
+
+    // We assume root orgunits have the same level
+    var rootLevel;
 
     // First of all, get user orgunits
     meUser.get().$promise.then(function(user) {
@@ -16,11 +19,15 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 
             dataViewOrgUnitPromise.then(function(orgunitResult) {
                 // Orgunit contains "id" and "level" fields
                 var orgunit = orgunitResult.organisationUnits[0];
+                rootLevel = orgunit.level;
 
                 var query = getQueryForOrgunit(orgunit);
                 sqlService.executeSqlView(query).then(function(queryResult) {
                     var rowArray = readQueryResult(queryResult);
                     $scope.tableRows.push(rowArray[0]);
+
+                    // Make visible orgunits under dataViewOrgunit
+                    $parse(orgunit.id).assign($scope, true);
 
                     var childQuery = getQueryForChildren(orgunit);
                     sqlService.executeSqlView(childQuery).then(function(childResult){
@@ -52,16 +59,23 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 
         angular.forEach(data.rows, function(row){
             var id = row[0];
             var name = row[1];
-            var level = row[2]
-            var period = row[3];
-            var value = row[4];
-            var storedby = row[5];
+            var level = row[2];
+            var path = row[3];
+            var period = row[4];
+            var value = row[5];
+            var storedby = row[6];
+
+            // Replace slash in path, and remove current orgunitid
+            path = path.substring(0, path.lastIndexOf("/"));
+            path = path.replace(/\//g, "");
 
             if(orgunits[id] === undefined){
                 orgunits[id] = {
                     id: id,
                     name: name,
                     level: level,
+                    parents: path,
+                    relativeLevel: level - rootLevel,
                     data: {}
                 }
                 angular.forEach($scope.periods, function(pe){
@@ -121,10 +135,10 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 
  * @param orgunitId
  * @param orgunitLevel
  * @param dataLevel
- * @returns The response has the following structure:  uid || name || level || period || value || storedby
+ * @returns The response has the following structure:  uid || name || level || path || period || value || storedby
  */
     var constructQuery = function(orgunitId, orgunitLevel, dataLevel) {
-        var query = "SELECT max(ou.uid) AS uid, max(ou.name) AS name, max(ou.hierarchylevel) AS level, a.period, sum(a.count), storedby FROM ( " +
+        var query = "SELECT max(ou.uid) AS uid, max(ou.name) AS name, max(ou.hierarchylevel) AS level, max(path) AS path, a.period, sum(a.count), storedby FROM ( " +
                         "SELECT _ou.idlevel" + dataLevel + " AS orgunitid, _pe.monthly AS period, count(*), 'pentaho' AS storedby " +
                             "FROM datavalue dv " +
                             "INNER JOIN _orgunitstructure _ou ON dv.sourceid = _ou.organisationunitid " +
@@ -171,6 +185,15 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', 'sqlService', 
     }
 
     $scope.clickOrgunit = function(orgunit){
+        var showChildren = $parse(orgunit.parents + orgunit.id);
+
+        // Check current state of parameter
+        if(showChildren($scope) === true){
+            showChildren.assign($scope, false);
+        } else {
+            showChildren.assign($scope, true);
+        }
+
         if (!orgunit.childrenLoaded == true) {
             orgunit.childrenLoaded = true;
             var childQuery = getQueryForChildren(orgunit);
