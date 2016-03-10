@@ -18,23 +18,59 @@
    along with Project Manager.  If not, see <http://www.gnu.org/licenses/>. */
 
 
-appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$parse", "$animate", "commonvariable", 
-                                                     "DataElementGroupsUID", "Organisationunit", "OrganisationunitLevel", "meUser", 
-                                                     function($scope, $q, $http, $parse, $animate, commonvariable, DataElementGroupsUID, 
-                                                    		 Organisationunit, OrganisationunitLevel, meUser) {
-	
-	// Some common variables
-	var values = [];
-	var maxLevel;
-	
-	// Initialize visibility of table and progressBar
-	$scope.tableDisplayed = false;
-	$scope.progressbarDisplayed = true;
-	
-	// Definition of inital promises
-	var meUserPromise = meUser.get().$promise;
-	var ouLevelsPromise = OrganisationunitLevel.get().$promise;
-	
+appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$parse", "$animate", "commonvariable",
+	"DataElementGroupsUID", "Organisationunit", "OrganisationunitLevel", "meUser",
+	function($scope, $q, $http, $parse, $animate, commonvariable, DataElementGroupsUID, Organisationunit,
+			 OrganisationunitLevel, meUser) {
+
+
+		// Some common variables
+		var values = [];
+
+		// Initialize visibility of table and progressBar
+		$scope.tableDisplayed = false;
+		$scope.progressbarDisplayed = true;
+
+		// Definition of meUser promise
+		var meUserPromise = meUser.get({fields: 'dataViewOrganisationUnits[id,level,children[id]]'}).$promise;
+
+		meUserPromise.then(function(meUser){
+			var dataViewOrgUnits = meUser.dataViewOrganisationUnits;
+
+			angular.forEach(dataViewOrgUnits, function(dataViewOrgUnit){
+				var queryParent = constructQuerySingleOrgunit(dataViewOrgUnit);
+
+				var queryChildren = constructQuery(dataViewOrgUnit.children);
+				
+			});
+
+		});
+
+		var constructQuerySingleOrgunit = function(orgunit){
+			return constructQuery([orgunit]);
+		};
+
+		var constructQuery = function(orgunitList){
+			var query = commonvariable.url + "analytics.json";
+
+			// Include list of orgunits
+			query = query + "?dimension=ou:";
+			angular.forEach(orgunitList, function(orgunit){
+				query = query + orgunit.id + ";";
+			});
+
+			// Add the period parameter: last 6 months
+			query = query + "&dimension=pe:LAST_6_MONTHS";
+			// Add the aggregation type: count
+			query = query + "&aggregationType=COUNT";
+			// Show complete hierarchy
+			query = query + "&hierarchyMeta=true&displayProperty=NAME";
+
+			return query;
+		};
+
+
+/**
 	$q.all([meUserPromise, ouLevelsPromise])
 	.then(function(data){
 
@@ -179,6 +215,7 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 		});
 	
 	});
+ */
 			
 	$scope.clickOrgunit = function(orgunitUID){
 		var showChildren = $parse(orgunitUID);
