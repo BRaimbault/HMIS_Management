@@ -1,6 +1,21 @@
 <h2>{{ 'AVAILABLE_DATA' | translate}}</h2>
 
-<table class="table table-bordered table-condensed table-hover">
+<div class="row">
+    <div class="col-md-3">
+        <div class="input-group">
+            <span class="input-group-addon" id="last-months-label">Show last months: </span>
+            <input ng-model="lastMonths" type="text" class="form-control" placeholder="Number of last months..."
+                    aria-describedby="last-months-label" size="4">
+        </div>
+    </div>
+    <button class="btn btn-default" ng-click="loadTable()"><span class="glyphicon glyphicon-refresh"></span></button>
+</div>
+
+<br>
+
+<d2-progressbar></d2-progressbar>
+
+<table ng-show="tableLoaded" class="table table-bordered table-condensed table-hover">
     <thead>
     <tr>
         <th class="orgunit">{{ 'ORGANISATIONUNIT_LABEL' | translate}}</th>

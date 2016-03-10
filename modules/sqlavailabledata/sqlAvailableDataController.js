@@ -7,52 +7,69 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', '$parse', 'sql
     // We assume root orgunits have the same level
     var rootLevel;
 
-    // First of all, get user orgunits
-    meUser.get().$promise.then(function(user) {
-        dataViewOrgunits = user.dataViewOrganisationUnits;
+    // By default, show last 12 months
+    $scope.lastMonths = 12;
 
-        var dataViewOrgunitNum = dataViewOrgunits.length;
-        var index = 0;
-        angular.forEach(dataViewOrgunits, function(dataViewOrgunit) {
-            var dataViewOrgUnitPromise = Organisationunit.get({filter: 'id:eq:' + dataViewOrgunit.id}).$promise;
+    $scope.loadTable = function(){
+        $scope.tableLoaded = false;
+        $scope.progressbarDisplayed = true;
 
-            dataViewOrgUnitPromise.then(function(orgunitResult) {
-                // Orgunit contains "id" and "level" fields
-                var orgunit = orgunitResult.organisationUnits[0];
-                rootLevel = orgunit.level;
+        // Reset previous data, if exist
+        $scope.tableRows = [];
+        $scope.periods = [];
+        tempChildArray = [];
+        rootLevel = null;
 
-                var query = getQueryForOrgunit(orgunit);
-                sqlService.executeSqlView(query).then(function(queryResult) {
-                    var rowArray = readQueryResult(queryResult);
-                    $scope.tableRows.push(rowArray[0]);
+        // First of all, get user orgunits
+        meUser.get().$promise.then(function(user) {
+            dataViewOrgunits = user.dataViewOrganisationUnits;
 
-                    // Make visible orgunits under dataViewOrgunit
-                    $parse(orgunit.id).assign($scope, true);
+            var dataViewOrgunitNum = dataViewOrgunits.length;
+            var index = 0;
+            angular.forEach(dataViewOrgunits, function(dataViewOrgunit) {
+                var dataViewOrgUnitPromise = Organisationunit.get({filter: 'id:eq:' + dataViewOrgunit.id}).$promise;
 
-                    var childQuery = getQueryForChildren(orgunit);
-                    sqlService.executeSqlView(childQuery).then(function(childResult){
-                        var childArray = readQueryResult(childResult);
-                        tempChildArray.push(childArray);
+                dataViewOrgUnitPromise.then(function(orgunitResult) {
+                    // Orgunit contains "id" and "level" fields
+                    var orgunit = orgunitResult.organisationUnits[0];
+                    rootLevel = orgunit.level;
 
-                        // Increment the counter
-                        index++;
+                    var query = getQueryForOrgunit(orgunit);
+                    sqlService.executeSqlView(query).then(function(queryResult) {
+                        var rowArray = readQueryResult(queryResult);
+                        $scope.tableRows.push(rowArray[0]);
 
-                        // Check if last orgunit
-                        if(index === dataViewOrgunitNum){
-                            console.log("get last one");
-                            $scope.tableRows = sortByName($scope.tableRows);
-                            angular.forEach(tempChildArray, function(child){
-                                includeChildren(child, orgunit.id);
-                            });
-                        }
+                        // Make visible orgunits under dataViewOrgunit
+                        $parse(orgunit.id).assign($scope, true);
 
+                        var childQuery = getQueryForChildren(orgunit);
+                        sqlService.executeSqlView(childQuery).then(function(childResult){
+                            var childArray = readQueryResult(childResult);
+                            tempChildArray.push(childArray);
+
+                            // Increment the counter
+                            index++;
+
+                            // Check if last orgunit
+                            if(index === dataViewOrgunitNum){
+                                console.log("get last one");
+                                $scope.tableRows = sortByName($scope.tableRows);
+                                angular.forEach(tempChildArray, function(child){
+                                    includeChildren(child, orgunit.id);
+                                    $scope.tableLoaded = true;
+                                    $scope.progressbarDisplayed = false;
+                                });
+                            }
+
+                        });
                     });
                 });
+
+
             });
-
-
         });
-    });
+    };
+
 
     var readQueryResult = function(data){
         var orgunits = {};
@@ -170,8 +187,7 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', '$parse', 'sql
 
         var periods = [];
 
-        // Get last 12 months, excluding current month;
-        for (var i = 0; i < 12; i ++) {
+        for (var i = 0; i < $scope.lastMonths; i ++) {
             indexMonth--;
             if (indexMonth < 0){
                 indexYear--;
@@ -203,5 +219,7 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', '$parse', 'sql
             })
         }
     }
+
+    $scope.loadTable();
 
 }]);
