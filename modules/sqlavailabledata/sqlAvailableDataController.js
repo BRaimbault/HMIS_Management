@@ -211,11 +211,13 @@ appManagerMSF.controller('sqlAvailableDataController', ['$scope', '$parse', 'sql
         }
 
         if (!orgunit.childrenLoaded == true) {
+            $("#loadChildren").modal('show');
             orgunit.childrenLoaded = true;
             var childQuery = getQueryForChildren(orgunit);
             sqlService.executeSqlView(childQuery).then(function (childResult) {
                 var childArray = readQueryResult(childResult);
                 includeChildren(childArray, orgunit.id);
+                $("#loadChildren").modal('hide');
             })
         }
     }

@@ -1,4 +1,4 @@
-<h2>{{ 'AVAILABLE_DATA' | translate}}</h2>
+<h2>HMIS Adoption</h2>
 
 <div class="row">
     <div class="col-md-3">
@@ -18,17 +18,28 @@
 <table ng-show="tableLoaded" class="table table-bordered table-condensed table-hover">
     <thead>
     <tr>
-        <th class="orgunit">{{ 'ORGANISATIONUNIT_LABEL' | translate}}</th>
+        <th class="orgunit col-md-4">{{ 'ORGANISATIONUNIT_LABEL' | translate}}</th>
         <th ng-repeat="pe in periods">{{pe}}</th>
     </tr>
     </thead>
     <tbody>
         <tr ng-repeat="orgunit in tableRows" ng-click="clickOrgunit(orgunit)"
                 ng-show="{{ orgunit.relativeLevel == 0 || (orgunit.parents) }}">
-            <td class="level{{ orgunit.level }}" style="text-indent: {{orgunit.relativeLevel}}em">{{orgunit.name}}</td>
+            <td class="level{{ orgunit.level }} col-md-4" style="text-indent: {{orgunit.relativeLevel}}em">{{orgunit.name}}</td>
             <td ng-repeat="period in orgunit.data" title="users: {{period.others}} || migration: {{period.pentaho}}"
                     style="background-color: rgb({{255 - (255 * period.others / (period.others + period.pentaho)) | number: 0}}, 255,0)">
                 {{100 * period.others / (period.others + period.pentaho) | number: 0}} %</td>
         </tr>
     </tbody>
 </table>
+
+<!-- Loading children modal-->
+<div class="modal" id="loadChildren" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">Loading children...</h4>
+            </div>
+        </div>
+    </div>
+</div>
