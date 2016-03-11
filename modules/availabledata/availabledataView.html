@@ -27,7 +27,17 @@
 		</tr>
 	</thead>
 	<tbody>
-		<tr ng-repeat="ou in orgunits | orderBy:'fullName'"	ng-show="{{ ou.relativeLevel == 0 || (ou.parents) }}"
+		<tr ng-repeat="ou in tableRows | orderBy:'fullName'" ng-show="{{ ou.relativeLevel == 0 || (ou.parents) }}"
+				ng-click="!ou.isLastLevel && clickOrgunit(ou.id)">
+			<td class="level{{ ou.level }}" style="text-indent: {{ou.relativeLevel}}em">
+					<span class="glyphicon {{ou.isLastLevel ? 'glyphicon-chevron-right' :
+									(ou.relativeLevel == 0 ? 'glyphicon-minus' : 'glyphicon-plus') }}"></span>
+				{{ ou.name }}
+			</td>
+			<td ng-repeat="pe in periods" title="{{ou.name}} - {{pe.name}}">{{ou.data[pe.id] | number:0}}</td>
+		</tr>
+	<!--
+	<tr ng-repeat="ou in orgunits | orderBy:'fullName'"	ng-show="{{ ou.relativeLevel == 0 || (ou.parents) }}"
 		ng-click="!ou.isLastLevel && clickOrgunit(ou.id)" on-last-repeat>
 			<td id="ou_{{ou.id}}" class="level{{ ou.level }}" style="text-indent: {{ou.relativeLevel}}em">
 				<span class="glyphicon {{ou.isLastLevel ? 'glyphicon-chevron-right' : 
@@ -36,6 +46,7 @@
 			</td>
 			<td ng-repeat="pe in periods" class="{{ ou.id }} {{ pe.id }}" title="{{ou.name}} - {{pe.name}}"></td>
 		</tr>
+		-->
 	</tbody>
 </table>
 

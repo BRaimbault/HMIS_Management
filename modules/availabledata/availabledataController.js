@@ -28,12 +28,14 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 		$scope.tableRows = [];
 		$scope.periods = [];
 
+		var orgunitsInfo = {};
+
 		// Initialize visibility of table and progressBar
 		$scope.tableDisplayed = false;
 		$scope.progressbarDisplayed = true;
 
 		// Definition of meUser promise
-		var meUserPromise = meUser.get({fields: 'dataViewOrganisationUnits[id,level,children[id]]'}).$promise;
+		var meUserPromise = meUser.get({fields: 'dataViewOrganisationUnits[id,level,children[id,level,children]]'}).$promise;
 
 		meUserPromise.then(function(meUser){
 			var dataViewOrgUnits = meUser.dataViewOrganisationUnits;
@@ -43,6 +45,10 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			angular.forEach(dataViewOrgUnits, function(dataViewOrgUnit){
 				var queryParent = constructQuerySingleOrgunit(dataViewOrgUnit);
 				var queryChildren = constructQuery(dataViewOrgUnit.children);
+
+				// Add orgunits to orgunitsInfo. That info will be required later.
+				orgunitsInfo[dataViewOrgUnit.id] = dataViewOrgUnit;
+				$.map(dataViewOrgUnit.children, function(child){orgunitsInfo[child.id] = child;});
 
 				$q.all([$http.get(queryParent), $http.get(queryChildren)])
 					.then(function(analyticsData){
@@ -60,6 +66,7 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 						if(k === ++currentOu){
 							$scope.tableDisplayed = true;
 							$scope.progressbarDisplayed = false;
+							console.log($scope.tableRows);
 						}
 					});
 			});
@@ -68,11 +75,25 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 
 		var formatAnalyticsResult = function (analytics) {
 			var orgunits = {};
-			angular.forEach(analytics.metaData.ou, function(orgunit){
+			angular.forEach(analytics.metaData.ou, function(orgunit) {
+				var parents = analytics.metaData.ouHierarchy[orgunit];
+
+				var parentArray = parents.split("/");
+				parentArray.shift();
+
+				var fullName = parentArray.map(function (parent) {
+					return analytics.metaData.names[parent];
+				}).join("/").concat("/" + analytics.metaData.names[orgunit])
+					.replace(/\ /g, "_");
+
 				orgunits[orgunit] = {
 					id: orgunit,
 					name: analytics.metaData.names[orgunit],
-					ouHierarchy: analytics.metaData.ouHierarchy[orgunit],
+					fullName: fullName,
+					parents: parentArray.join(" && "),
+					level: orgunitsInfo[orgunit].level,
+					relativeLevel: parentArray.length,
+					isLastLevel: orgunitsInfo[orgunit].children.length === 0,
 					data: {}
 				}
 			});
@@ -289,12 +310,3 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 	}
 	
 }]);
-
-// Directive to emit an event when a repeat process is in the last item
-Dhis2Api.directive('onLastRepeat', function(){
-	return function(scope, element, attrs) {
-        if (scope.$last) setTimeout(function(){
-            scope.$emit('onRepeatLast', element, attrs);
-        }, 1);
-    };
-});
