@@ -66,7 +66,9 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 						if(k === ++currentOu){
 							$scope.tableDisplayed = true;
 							$scope.progressbarDisplayed = false;
-							console.log($scope.tableRows);
+
+							// Make visible orgunits under dataViewOrgunit
+							$parse(dataViewOrgUnit.id).assign($scope, true);
 						}
 					});
 			});
@@ -287,26 +289,56 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 	});
  */
 			
-	$scope.clickOrgunit = function(orgunitUID){
-		var showChildren = $parse(orgunitUID);
-		
+	$scope.clickOrgunit = function(orgunitId){
+
+		var showChildren = $parse(orgunitId);
+
 		// Check current state of parameter
 		if(showChildren($scope) === true){
 			showChildren.assign($scope, false);
 		} else {
-			showChildren.assign($scope, true);			
+			showChildren.assign($scope, true);
+			console.log(childrenLoaded(orgunitId));
+			if(!childrenLoaded(orgunitId)){
+				loadChildren(orgunitId);
+			}
 		}
 		
 		// Toggle between plus and minus icons
-		$("#ou_" + orgunitUID).find("span").toggleClass("glyphicon-plus glyphicon-minus ");
-	}
-	
-	var getMaxLevel = function(levels){
-		var max = 1;
-		angular.forEach(levels, function(level){
-			if(level.level > max) {max = level.level};
-		});
-		return max;
-	}
-	
+		$("#ou_" + orgunitId).find("span").toggleClass("glyphicon-plus glyphicon-minus ");
+	};
+
+	var loadChildren = function(orgunitId) {
+		var childrenInfo = Organisationunit.get({
+			paging: false,
+			fields: "id,name,level,children",
+			filter: "id:in:[" + orgunitsInfo[orgunitId].children.map(function(child){return child.id;}).join(",") + "]"
+		}).$promise;
+
+		var childrenQuery = $http.get(constructQuery(orgunitsInfo[orgunitId].children));
+
+		$q.all([childrenInfo, childrenQuery])
+			.then(function(data){
+				var childrenInfo = data[0].organisationUnits;
+				// Add children information to orgunitsInfo
+				$.map(childrenInfo, function(child){
+					orgunitsInfo[child.id] = child;
+				});
+
+				// Add analytics information to table
+				var childrenResult = data[1].data;
+				var childrenRows = formatAnalyticsResult(childrenResult);
+				$scope.tableRows = $scope.tableRows.concat(childrenRows);
+			});
+	};
+
+	var childrenLoaded = function(orgunitId){
+		var children = orgunitsInfo[orgunitId].children;
+		for(i = 0; i < children.length; i++){
+			if(orgunitsInfo[children[i].id] != undefined) {
+				return true;
+			}
+		}
+		return false;
+	};
 }]);
