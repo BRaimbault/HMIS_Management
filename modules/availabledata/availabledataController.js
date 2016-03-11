@@ -25,7 +25,8 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 
 
 		// Some common variables
-		var values = [];
+		$scope.tableRows = [];
+		$scope.periods = [];
 
 		// Initialize visibility of table and progressBar
 		$scope.tableDisplayed = false;
@@ -37,14 +38,62 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 		meUserPromise.then(function(meUser){
 			var dataViewOrgUnits = meUser.dataViewOrganisationUnits;
 
+			var k = dataViewOrgUnits.length;
+			var currentOu = 0;
 			angular.forEach(dataViewOrgUnits, function(dataViewOrgUnit){
 				var queryParent = constructQuerySingleOrgunit(dataViewOrgUnit);
-
 				var queryChildren = constructQuery(dataViewOrgUnit.children);
-				
+
+				$q.all([$http.get(queryParent), $http.get(queryChildren)])
+					.then(function(analyticsData){
+						var parentResult = analyticsData[0].data;
+						var childrenResult = analyticsData[1].data;
+
+						// Generate public period array. It is required for other functions
+						regenerateScopePeriodArray(parentResult);
+
+						var parentRows = formatAnalyticsResult(parentResult);
+						var childrenRows = formatAnalyticsResult(childrenResult);
+						$scope.tableRows = $scope.tableRows.concat(parentRows).concat(childrenRows);
+
+						// Check if last dataViewOrgunit
+						if(k === ++currentOu){
+							$scope.tableDisplayed = true;
+							$scope.progressbarDisplayed = false;
+						}
+					});
 			});
 
 		});
+
+		var formatAnalyticsResult = function (analytics) {
+			var orgunits = {};
+			angular.forEach(analytics.metaData.ou, function(orgunit){
+				orgunits[orgunit] = {
+					id: orgunit,
+					name: analytics.metaData.names[orgunit],
+					ouHierarchy: analytics.metaData.ouHierarchy[orgunit],
+					data: {}
+				}
+			});
+
+			// Include data. Data is in "rows" attribute as an array with the syntax [orgunitid, period, value]
+			angular.forEach(analytics.rows, function(row){
+				orgunits[row[0]].data[row[1]] = row[2];
+			});
+
+			return $.map(orgunits, function(orgunit, id){ return [orgunit]; })
+		};
+
+		var regenerateScopePeriodArray = function (analyticsResponse) {
+			$scope.periods = [];
+			angular.forEach(analyticsResponse.metaData.pe, function(pe){
+				$scope.periods.push({
+					id: pe,
+					name: analyticsResponse.metaData.names[pe]
+				})
+			});
+		};
 
 		var constructQuerySingleOrgunit = function(orgunit){
 			return constructQuery([orgunit]);
