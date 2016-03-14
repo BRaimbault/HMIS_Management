@@ -22,7 +22,8 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 	"DataElementGroupsUID", "Organisationunit", "OrganisationunitLevel", "meUser",
 	function($scope, $q, $http, $parse, $animate, commonvariable, DataElementGroupsUID, Organisationunit,
 			 OrganisationunitLevel, meUser) {
-
+		
+		$scope.selectedPeriod = "LAST_12_MONTHS";
 
 		// Some common variables
 		$scope.tableRows = [];
@@ -132,7 +133,7 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			});
 
 			// Add the period parameter: last 6 months
-			query = query + "&dimension=pe:LAST_6_MONTHS";
+			query = query + "&dimension=pe:" + $scope.selectedPeriod;
 			// Add the aggregation type: count
 			query = query + "&aggregationType=COUNT";
 			// Show complete hierarchy
