@@ -53,3 +53,20 @@ tr:hover {
 th.orgunit {
 	width: 40%;
 }
+
+.children-loading-icon {
+   animation: rotation infinite linear 0.5s;
+   text-indent: 0;
+}
+
+@keyframes rotation {
+   0% {
+      transform:rotate(0deg);
+      -webkit-transform:rotate(0deg);
+   }
+
+   100% {
+      transform:rotate(360deg);
+      -webkit-transform:rotate(360deg);
+   }
+}

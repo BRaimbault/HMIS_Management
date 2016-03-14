@@ -293,22 +293,25 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 
 		var showChildren = $parse(orgunitId);
 
+
 		// Check current state of parameter
 		if(showChildren($scope) === true){
 			showChildren.assign($scope, false);
 		} else {
 			showChildren.assign($scope, true);
-			console.log(childrenLoaded(orgunitId));
 			if(!childrenLoaded(orgunitId)){
 				loadChildren(orgunitId);
 			}
 		}
 		
 		// Toggle between plus and minus icons
-		$("#ou_" + orgunitId).find("span").toggleClass("glyphicon-plus glyphicon-minus ");
+		$("#ou_" + orgunitId).find("span.ou-prefix").toggleClass("glyphicon-plus glyphicon-minus ");
 	};
 
 	var loadChildren = function(orgunitId) {
+		// Add a loading icon and save the reference
+		var loadingIcon = addLoadingIcon(orgunitId);
+
 		var childrenInfo = Organisationunit.get({
 			paging: false,
 			fields: "id,name,level,children",
@@ -329,6 +332,11 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 				var childrenResult = data[1].data;
 				var childrenRows = formatAnalyticsResult(childrenResult);
 				$scope.tableRows = $scope.tableRows.concat(childrenRows);
+
+			})
+			.finally(function(){
+				// Once finished, remove loadingIcon
+				loadingIcon.remove();
 			});
 	};
 
@@ -340,5 +348,10 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			}
 		}
 		return false;
+	};
+
+	var addLoadingIcon = function(orgunitId){
+		$("#ou_" + orgunitId).append("<span class='children-loading-icon glyphicon glyphicon-repeat'></span>");
+		return ($("#ou_" + orgunitId).find(".children-loading-icon"));
 	};
 }]);
