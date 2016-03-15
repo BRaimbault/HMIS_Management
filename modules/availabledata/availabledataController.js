@@ -30,6 +30,47 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 		];
 		$scope.selectedPeriod = "LAST_12_MONTHS";
 
+		$scope.availableFilters = [
+			{"name":"1. Health Service", "id":"BtFXTpKRl6n",
+				"organisationUnitGroups":[
+					{"name":"Outbreak Meningitis","id":"luXYP2gbXAw"},
+					{"name":"Sexual and Rep. Health OPD","id":"ItsTxGI1mPr"},
+					{"name":"Intensive Care Unit","id":"T5aMe2MFm02"},
+					{"name":"NUT ITFC","id":"FC8mvWjD4ZY"},
+					{"name":"Operating Theatre","id":"Nr7ugEFGcxv"},
+					{"name":"Observation Room","id":"R6gkWNQJgyM"},
+					{"name":"Surveillance Nut","id":"OaBEh0YCXww"},
+					{"name":"NUT ATFC","id":"P2OT6qp9dLo"},
+					{"name":"Outbreak Dengue","id":"sE49bt0kXEj"},
+					{"name":"Surgical Ward","id":"tKhHbXZLsba"},
+					{"name":"Outbreak Malaria OPD","id":"oPbiy9hqwqP"},
+					{"name":"Emergency Room","id":"fNeyMnZZtjO"},
+					{"name":"Outbreak Cholera","id":"LPUnCW9NjxX"},
+					{"name":"HIV","id":"m4O3cnJXGVv"},
+					{"name":"Sexual and Rep. Health IPD","id":"rUCNmZdKZIk"},
+					{"name":"External Consultations","id":"GbVsHdOX6C6"},
+					{"name":"Hospitalization Ward","id":"gNBa5Kjwndn"},
+					{"name":"Outbreak Malaria IPD","id":"wH1vAobxxQQ"},
+					{"name":"Gender Based Violence","id":"glSRvjr6MHn"},
+					{"name":"External Consultations (children)","id":"BrrYJqG5l1i"},
+					{"name":"Neonatology","id":"UJzwS21A4kL"},
+					{"name":"Mental Health","id":"BJTte7WCV8u"},
+					{"name":"Outbreak Measles","id":"WQj4Q7d7Arr"},
+					{"name":"Hospitalization Ward (children)","id":"z0ZERaDu6b2"},
+					{"name":"Vaccination","id":"u0Lz87duKc1"},
+					{"name":"NUT TSFC","id":"EXJNFuz4qvV"},
+					{"name":"Early Warning System","id":"VzmfaJEFawS"},
+					{"name":"Diagnostic test","id":"U1HqaCiydLc"},
+					{"name":"TB","id":"ONFgLK6XScq"},
+					{"name":"Surveillance Mortality","id":"QiorWXQbkE3"}
+				]
+			}
+		];
+
+		$scope.selectedFilters = [
+			{key: "BtFXTpKRl6n", value: "BJTte7WCV8u"}
+		];
+
 		var orgunitsInfo = {};
 
 		var loadTable = function(){
@@ -148,6 +189,10 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			// Show complete hierarchy
 			query = query + "&hierarchyMeta=true&displayProperty=NAME";
 
+			angular.forEach($scope.selectedFilters, function(filter){
+				query = query + "&filter=" + filter.key + ":" + filter.value;
+			});
+
 			return query;
 		};
 			
@@ -224,13 +269,27 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			var periodLabel = $("#" + $scope.selectedPeriod);
 			periodLabel.addClass("active");
 			periodLabel.find("input").attr('checked', 'checked');
+
+			// Preselect filters
+			angular.forEach($scope.selectedFilters, function(filter){
+				$("#" + filter.key).find("option[value='" + filter.value + "']").attr("selected", "selected");
+			});
 		};
 
 		$scope.updateSettings = function() {
 			// Update period information
 			var periodId = $("#periodSelector").find("label.active").attr("id");
-			console.log(periodId);
 			$scope.selectedPeriod = periodId;
+
+			// Update filter information
+			$scope.selectedFilters = [];
+			var filters = $(".filter-select");
+			$.each(filters, function(index, filter){
+				$scope.selectedFilters.push({
+					key: $(filter).attr("id"),
+					value: $(filter).find("option:selected").val()
+				})
+			});
 
 			$("#availableDataSettings").modal("hide");
 			loadTable();
