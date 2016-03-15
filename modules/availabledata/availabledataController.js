@@ -22,59 +22,68 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 	"DataElementGroupsUID", "Organisationunit", "OrganisationunitLevel", "meUser",
 	function($scope, $q, $http, $parse, $animate, commonvariable, DataElementGroupsUID, Organisationunit,
 			 OrganisationunitLevel, meUser) {
-		
-		$scope.selectedPeriod = "LAST_12_MONTHS";
 
-		// Some common variables
-		$scope.tableRows = [];
-		$scope.periods = [];
+		$scope.availablePeriods = [
+			{key: "LAST_3_MONTHS", value: 3},
+			{key: "LAST_6_MONTHS", value: 6},
+			{key: "LAST_12_MONTHS", value: 12}
+		];
+		$scope.selectedPeriod = "LAST_12_MONTHS";
 
 		var orgunitsInfo = {};
 
-		// Initialize visibility of table and progressBar
-		$scope.tableDisplayed = false;
-		$scope.progressbarDisplayed = true;
+		var loadTable = function(){
 
-		// Definition of meUser promise
-		var meUserPromise = meUser.get({fields: 'dataViewOrganisationUnits[id,level,children[id,level,children]]'}).$promise;
+			// Initialize common variables
+			$scope.tableRows = [];
+			orgunitsInfo = {};
 
-		meUserPromise.then(function(meUser){
-			var dataViewOrgUnits = meUser.dataViewOrganisationUnits;
+			// Initialize visibility of table and progressBar
+			$scope.tableDisplayed = false;
+			$scope.progressbarDisplayed = true;
 
-			var k = dataViewOrgUnits.length;
-			var currentOu = 0;
-			angular.forEach(dataViewOrgUnits, function(dataViewOrgUnit){
-				var queryParent = constructQuerySingleOrgunit(dataViewOrgUnit);
-				var queryChildren = constructQuery(dataViewOrgUnit.children);
+			// Definition of meUser promise
+			var meUserPromise = meUser.get({fields: 'dataViewOrganisationUnits[id,level,children[id,level,children]]'}).$promise;
 
-				// Add orgunits to orgunitsInfo. That info will be required later.
-				orgunitsInfo[dataViewOrgUnit.id] = dataViewOrgUnit;
-				$.map(dataViewOrgUnit.children, function(child){orgunitsInfo[child.id] = child;});
+			meUserPromise.then(function(meUser){
+				var dataViewOrgUnits = meUser.dataViewOrganisationUnits;
 
-				$q.all([$http.get(queryParent), $http.get(queryChildren)])
-					.then(function(analyticsData){
-						var parentResult = analyticsData[0].data;
-						var childrenResult = analyticsData[1].data;
+				var k = dataViewOrgUnits.length;
+				var currentOu = 0;
+				angular.forEach(dataViewOrgUnits, function(dataViewOrgUnit){
+					var queryParent = constructQuerySingleOrgunit(dataViewOrgUnit);
+					var queryChildren = constructQuery(dataViewOrgUnit.children);
 
-						// Generate public period array. It is required for other functions
-						regenerateScopePeriodArray(parentResult);
+					// Add orgunits to orgunitsInfo. That info will be required later.
+					orgunitsInfo[dataViewOrgUnit.id] = dataViewOrgUnit;
+					$.map(dataViewOrgUnit.children, function(child){orgunitsInfo[child.id] = child;});
 
-						var parentRows = formatAnalyticsResult(parentResult);
-						var childrenRows = formatAnalyticsResult(childrenResult);
-						$scope.tableRows = $scope.tableRows.concat(parentRows).concat(childrenRows);
+					$q.all([$http.get(queryParent), $http.get(queryChildren)])
+						.then(function(analyticsData){
+							var parentResult = analyticsData[0].data;
+							var childrenResult = analyticsData[1].data;
 
-						// Check if last dataViewOrgunit
-						if(k === ++currentOu){
-							$scope.tableDisplayed = true;
-							$scope.progressbarDisplayed = false;
+							// Generate public period array. It is required for other functions
+							regenerateScopePeriodArray(parentResult);
 
-							// Make visible orgunits under dataViewOrgunit
-							$parse(dataViewOrgUnit.id).assign($scope, true);
-						}
-					});
+							var parentRows = formatAnalyticsResult(parentResult);
+							var childrenRows = formatAnalyticsResult(childrenResult);
+							$scope.tableRows = $scope.tableRows.concat(parentRows).concat(childrenRows);
+
+							// Check if last dataViewOrgunit
+							if(k === ++currentOu){
+								$scope.tableDisplayed = true;
+								$scope.progressbarDisplayed = false;
+
+								// Make visible orgunits under dataViewOrgunit
+								$parse(dataViewOrgUnit.id).assign($scope, true);
+							}
+						});
+				});
 			});
+		};
 
-		});
+
 
 		var formatAnalyticsResult = function (analytics) {
 			var orgunits = {};
@@ -142,69 +151,91 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			return query;
 		};
 			
-	$scope.clickOrgunit = function(orgunitId){
+		$scope.clickOrgunit = function(orgunitId){
 
-		var showChildren = $parse(orgunitId);
+			var showChildren = $parse(orgunitId);
 
-
-		// Check current state of parameter
-		if(showChildren($scope) === true){
-			showChildren.assign($scope, false);
-		} else {
-			showChildren.assign($scope, true);
-			if(!childrenLoaded(orgunitId)){
-				loadChildren(orgunitId);
+			// Check current state of parameter
+			if(showChildren($scope) === true){
+				showChildren.assign($scope, false);
+			} else {
+				showChildren.assign($scope, true);
+				if(!childrenLoaded(orgunitId)){
+					loadChildren(orgunitId);
+				}
 			}
-		}
-		
-		// Toggle between plus and minus icons
-		$("#ou_" + orgunitId).find("span.ou-prefix").toggleClass("glyphicon-plus glyphicon-minus ");
-	};
 
-	var loadChildren = function(orgunitId) {
-		// Add a loading icon and save the reference
-		var loadingIcon = addLoadingIcon(orgunitId);
+			// Toggle between plus and minus icons
+			$("#ou_" + orgunitId).find("span.ou-prefix").toggleClass("glyphicon-plus glyphicon-minus ");
+		};
 
-		var childrenInfo = Organisationunit.get({
-			paging: false,
-			fields: "id,name,level,children",
-			filter: "id:in:[" + orgunitsInfo[orgunitId].children.map(function(child){return child.id;}).join(",") + "]"
-		}).$promise;
+		var loadChildren = function(orgunitId) {
+			// Add a loading icon and save the reference
+			var loadingIcon = addLoadingIcon(orgunitId);
 
-		var childrenQuery = $http.get(constructQuery(orgunitsInfo[orgunitId].children));
+			var childrenInfo = Organisationunit.get({
+				paging: false,
+				fields: "id,name,level,children",
+				filter: "id:in:[" + orgunitsInfo[orgunitId].children.map(function(child){return child.id;}).join(",") + "]"
+			}).$promise;
 
-		$q.all([childrenInfo, childrenQuery])
-			.then(function(data){
-				var childrenInfo = data[0].organisationUnits;
-				// Add children information to orgunitsInfo
-				$.map(childrenInfo, function(child){
-					orgunitsInfo[child.id] = child;
+			var childrenQuery = $http.get(constructQuery(orgunitsInfo[orgunitId].children));
+
+			$q.all([childrenInfo, childrenQuery])
+				.then(function(data){
+					var childrenInfo = data[0].organisationUnits;
+					// Add children information to orgunitsInfo
+					$.map(childrenInfo, function(child){
+						orgunitsInfo[child.id] = child;
+					});
+
+					// Add analytics information to table
+					var childrenResult = data[1].data;
+					var childrenRows = formatAnalyticsResult(childrenResult);
+					$scope.tableRows = $scope.tableRows.concat(childrenRows);
+
+				})
+				.finally(function(){
+					// Once finished, remove loadingIcon
+					loadingIcon.remove();
 				});
+		};
 
-				// Add analytics information to table
-				var childrenResult = data[1].data;
-				var childrenRows = formatAnalyticsResult(childrenResult);
-				$scope.tableRows = $scope.tableRows.concat(childrenRows);
-
-			})
-			.finally(function(){
-				// Once finished, remove loadingIcon
-				loadingIcon.remove();
-			});
-	};
-
-	var childrenLoaded = function(orgunitId){
-		var children = orgunitsInfo[orgunitId].children;
-		for(i = 0; i < children.length; i++){
-			if(orgunitsInfo[children[i].id] != undefined) {
-				return true;
+		var childrenLoaded = function(orgunitId){
+			var children = orgunitsInfo[orgunitId].children;
+			for(i = 0; i < children.length; i++){
+				if(orgunitsInfo[children[i].id] != undefined) {
+					return true;
+				}
 			}
-		}
-		return false;
-	};
+			return false;
+		};
 
-	var addLoadingIcon = function(orgunitId){
-		$("#ou_" + orgunitId).append("<span class='children-loading-icon glyphicon glyphicon-repeat'></span>");
-		return ($("#ou_" + orgunitId).find(".children-loading-icon"));
-	};
+		var addLoadingIcon = function(orgunitId){
+			var orgunitRow = $("#ou_" + orgunitId);
+			orgunitRow.append("<span class='children-loading-icon glyphicon glyphicon-repeat'></span>");
+			return (orgunitRow.find(".children-loading-icon"));
+		};
+
+		$scope.showSettings = function(){
+			$("#availableDataSettings").modal();
+
+			// Preselect period
+			var periodLabel = $("#" + $scope.selectedPeriod);
+			periodLabel.addClass("active");
+			periodLabel.find("input").attr('checked', 'checked');
+		};
+
+		$scope.updateSettings = function() {
+			// Update period information
+			var periodId = $("#periodSelector").find("label.active").attr("id");
+			console.log(periodId);
+			$scope.selectedPeriod = periodId;
+
+			$("#availableDataSettings").modal("hide");
+			loadTable();
+		};
+
+		// Initialize table
+		loadTable();
 }]);

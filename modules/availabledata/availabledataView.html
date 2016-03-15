@@ -17,7 +17,9 @@
    You should have received a copy of the GNU General Public License
    along with Project Manager.  If not, see <http://www.gnu.org/licenses/>. -->
 
-<h2>{{ 'AVAILABLE_DATA' | translate}}</h2>	
+<h2>{{ 'AVAILABLE_DATA' | translate}}
+	<button class="btn btn-default" ng-click="showSettings()">Settings <span class="glyphicon glyphicon-cog"></span></button>
+</h2>
 
 <table class="table table-bordered table-condensed table-hover" ng-show="tableDisplayed">
 	<thead>
@@ -36,18 +38,42 @@
 			</td>
 			<td ng-repeat="pe in periods" title="{{ou.name}} - {{pe.name}}">{{ou.data[pe.id] | number:0}}</td>
 		</tr>
-	<!--
-	<tr ng-repeat="ou in orgunits | orderBy:'fullName'"	ng-show="{{ ou.relativeLevel == 0 || (ou.parents) }}"
-		ng-click="!ou.isLastLevel && clickOrgunit(ou.id)" on-last-repeat>
-			<td id="ou_{{ou.id}}" class="level{{ ou.level }}" style="text-indent: {{ou.relativeLevel}}em">
-				<span class="glyphicon {{ou.isLastLevel ? 'glyphicon-chevron-right' : 
-								(ou.relativeLevel == 0 ? 'glyphicon-minus' : 'glyphicon-plus') }}" aria-hidden="true"></span>
-				{{ ou.name }}
-			</td>
-			<td ng-repeat="pe in periods" class="{{ ou.id }} {{ pe.id }}" title="{{ou.name}} - {{pe.name}}"></td>
-		</tr>
-		-->
 	</tbody>
 </table>
 
 <d2-progressbar></d2-progressbar>
+
+<!-- Settings modal -->
+<div class="modal" data-backdrop="static" id="availableDataSettings" role="dialog">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Settings</h4>
+			</div>
+			<div class="modal-body">
+				<div class="row">
+					<div class="col-md-6">
+
+					</div>
+					<div class="col-md-6">
+						<div class="panel panel-default">
+							<div class="panel-body">
+								<h4>Number of months:</h4>
+								<div class="row">
+									<div id="periodSelector" class="btn-group" data-toggle="buttons">
+										<label ng-repeat="period in availablePeriods" id="{{period.key}}" class="btn btn-default">
+											<input type="radio" name="options" autocomplete="off"> {{period.value}}
+										</label>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-primary" ng-click="updateSettings()">{{ 'IMPORT' | translate }}</button>
+			</div>
+		</div>
+	</div>
+</div>
