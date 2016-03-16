@@ -1,5 +1,4 @@
-
-/* 
+/*
    Copyright (c) 2015.
  
    This file is part of Project Manager.
@@ -19,59 +18,38 @@
 
 
 appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$parse", "$animate", "commonvariable",
-	"DataElementGroupsUID", "Organisationunit", "OrganisationunitLevel", "meUser",
+	"DataElementGroupsUID", "Organisationunit", "OrganisationUnitGroupSet", "meUser",
 	function($scope, $q, $http, $parse, $animate, commonvariable, DataElementGroupsUID, Organisationunit,
-			 OrganisationunitLevel, meUser) {
+			 OrganisationUnitGroupSet, meUser) {
 
 		$scope.availablePeriods = [
 			{key: "LAST_3_MONTHS", value: 3},
 			{key: "LAST_6_MONTHS", value: 6},
 			{key: "LAST_12_MONTHS", value: 12}
 		];
-		$scope.selectedPeriod = "LAST_12_MONTHS";
+		var selectedPeriod = "LAST_12_MONTHS";
 
 		$scope.availableFilters = [
-			{"name":"1. Health Service", "id":"BtFXTpKRl6n",
-				"organisationUnitGroups":[
-					{"name":"Outbreak Meningitis","id":"luXYP2gbXAw"},
-					{"name":"Sexual and Rep. Health OPD","id":"ItsTxGI1mPr"},
-					{"name":"Intensive Care Unit","id":"T5aMe2MFm02"},
-					{"name":"NUT ITFC","id":"FC8mvWjD4ZY"},
-					{"name":"Operating Theatre","id":"Nr7ugEFGcxv"},
-					{"name":"Observation Room","id":"R6gkWNQJgyM"},
-					{"name":"Surveillance Nut","id":"OaBEh0YCXww"},
-					{"name":"NUT ATFC","id":"P2OT6qp9dLo"},
-					{"name":"Outbreak Dengue","id":"sE49bt0kXEj"},
-					{"name":"Surgical Ward","id":"tKhHbXZLsba"},
-					{"name":"Outbreak Malaria OPD","id":"oPbiy9hqwqP"},
-					{"name":"Emergency Room","id":"fNeyMnZZtjO"},
-					{"name":"Outbreak Cholera","id":"LPUnCW9NjxX"},
-					{"name":"HIV","id":"m4O3cnJXGVv"},
-					{"name":"Sexual and Rep. Health IPD","id":"rUCNmZdKZIk"},
-					{"name":"External Consultations","id":"GbVsHdOX6C6"},
-					{"name":"Hospitalization Ward","id":"gNBa5Kjwndn"},
-					{"name":"Outbreak Malaria IPD","id":"wH1vAobxxQQ"},
-					{"name":"Gender Based Violence","id":"glSRvjr6MHn"},
-					{"name":"External Consultations (children)","id":"BrrYJqG5l1i"},
-					{"name":"Neonatology","id":"UJzwS21A4kL"},
-					{"name":"Mental Health","id":"BJTte7WCV8u"},
-					{"name":"Outbreak Measles","id":"WQj4Q7d7Arr"},
-					{"name":"Hospitalization Ward (children)","id":"z0ZERaDu6b2"},
-					{"name":"Vaccination","id":"u0Lz87duKc1"},
-					{"name":"NUT TSFC","id":"EXJNFuz4qvV"},
-					{"name":"Early Warning System","id":"VzmfaJEFawS"},
-					{"name":"Diagnostic test","id":"U1HqaCiydLc"},
-					{"name":"TB","id":"ONFgLK6XScq"},
-					{"name":"Surveillance Mortality","id":"QiorWXQbkE3"}
-				]
-			}
+			{"id":"BtFXTpKRl6n", name: "Mental Health"}
 		];
 
-		$scope.selectedFilters = [
+		var selectedFilters = [
 			{key: "BtFXTpKRl6n", value: "BJTte7WCV8u"}
 		];
 
 		var orgunitsInfo = {};
+
+		var loadFilters = function(){
+			return OrganisationUnitGroupSet.get({
+					filter: "id:in:[" + $scope.availableFilters.map(function(filter){return filter.id;}).join(",") + "]",
+					fields: "name,id,organisationUnitGroups[name,id]",
+					paging: false
+				}).$promise
+				.then(function(result){
+					$scope.availableFilters = result.organisationUnitGroupSets;
+					return;
+				});
+		};
 
 		var loadTable = function(){
 
@@ -183,13 +161,13 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			});
 
 			// Add the period parameter: last 6 months
-			query = query + "&dimension=pe:" + $scope.selectedPeriod;
+			query = query + "&dimension=pe:" + selectedPeriod;
 			// Add the aggregation type: count
 			query = query + "&aggregationType=COUNT";
 			// Show complete hierarchy
 			query = query + "&hierarchyMeta=true&displayProperty=NAME";
 
-			angular.forEach($scope.selectedFilters, function(filter){
+			angular.forEach(selectedFilters, function(filter){
 				query = query + "&filter=" + filter.key + ":" + filter.value;
 			});
 
@@ -266,12 +244,12 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			$("#availableDataSettings").modal();
 
 			// Preselect period
-			var periodLabel = $("#" + $scope.selectedPeriod);
+			var periodLabel = $("#" + selectedPeriod);
 			periodLabel.addClass("active");
 			periodLabel.find("input").attr('checked', 'checked');
 
 			// Preselect filters
-			angular.forEach($scope.selectedFilters, function(filter){
+			angular.forEach(selectedFilters, function(filter){
 				$("#" + filter.key).find("option[value='" + filter.value + "']").attr("selected", "selected");
 			});
 		};
@@ -279,13 +257,13 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 		$scope.updateSettings = function() {
 			// Update period information
 			var periodId = $("#periodSelector").find("label.active").attr("id");
-			$scope.selectedPeriod = periodId;
+			selectedPeriod = periodId;
 
 			// Update filter information
-			$scope.selectedFilters = [];
+			selectedFilters = [];
 			var filters = $(".filter-select");
 			$.each(filters, function(index, filter){
-				$scope.selectedFilters.push({
+				selectedFilters.push({
 					key: $(filter).attr("id"),
 					value: $(filter).find("option:selected").val()
 				})
@@ -296,5 +274,5 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 		};
 
 		// Initialize table
-		loadTable();
+		loadFilters().then(loadTable());
 }]);

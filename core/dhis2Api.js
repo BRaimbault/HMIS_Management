@@ -248,3 +248,7 @@ Dhis2Api.factory("DataElementGroupsUID",['$resource','commonvariable', function 
 	{},
   { get: { method: "GET"} });
 }]);
+
+Dhis2Api.factory("OrganisationUnitGroupSet",['$resource','commonvariable', function ($resource,commonvariable) {
+	return $resource( commonvariable.url+"organisationUnitGroupSets" );
+}]);
