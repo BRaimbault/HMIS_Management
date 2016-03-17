@@ -18,9 +18,9 @@
 
 
 appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$parse", "$animate", "commonvariable",
-	"DataElementGroupsUID", "Organisationunit", "OrganisationUnitGroupSet", "meUser",
+	"DataElementGroupsUID", "Organisationunit", "OrganisationUnitGroupSet", "meUser", "DataStore",
 	function($scope, $q, $http, $parse, $animate, commonvariable, DataElementGroupsUID, Organisationunit,
-			 OrganisationUnitGroupSet, meUser) {
+			 OrganisationUnitGroupSet, meUser, DataStore) {
 
 		$scope.availablePeriods = [
 			{key: "LAST_3_MONTHS", value: 3},
@@ -30,14 +30,31 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 		var selectedPeriod = "LAST_12_MONTHS";
 
 		$scope.availableFilters = [
-			{"id":"BtFXTpKRl6n", name: "Mental Health"}
+			{id:"BtFXTpKRl6n", name: "1. Health Service"}
 		];
 
-		var selectedFilters = [
-			{key: "BtFXTpKRl6n", value: "BJTte7WCV8u"}
-		];
+		var selectedFilters = [];
 
 		var orgunitsInfo = {};
+
+		var getUserId = function() {
+			// Get current user id
+			return meUser.get({fields: 'id'}).$promise
+				.then(function(user){
+					return user.id;
+				});
+		};
+
+		var loadUserSettings = function() {
+			return getUserId().then(function(userid){
+				DataStore.get({namespace:"project_manager", key: userid}).$promise
+					.then(function(userSettings) {
+						selectedPeriod = userSettings.availableData.period;
+						selectedFilters = userSettings.availableData.filters;
+						console.log(userSettings);
+					});
+			});
+		};
 
 		var loadFilters = function(){
 			return OrganisationUnitGroupSet.get({
@@ -47,7 +64,6 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 				}).$promise
 				.then(function(result){
 					$scope.availableFilters = result.organisationUnitGroupSets;
-					return;
 				});
 		};
 
@@ -274,5 +290,5 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 		};
 
 		// Initialize table
-		loadFilters().then(loadTable());
+		loadUserSettings().then(loadFilters).then(loadTable);
 }]);
