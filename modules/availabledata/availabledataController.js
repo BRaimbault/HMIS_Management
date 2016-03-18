@@ -18,9 +18,9 @@
 
 
 appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$parse", "$animate", "commonvariable",
-	"DataElementGroupsUID", "Organisationunit", "OrganisationUnitGroupSet", "meUser", "DataStore",
+	"DataElementGroupsUID", "Organisationunit", "OrganisationUnitGroupSet", "meUser", "DataStoreService",
 	function($scope, $q, $http, $parse, $animate, commonvariable, DataElementGroupsUID, Organisationunit,
-			 OrganisationUnitGroupSet, meUser, DataStore) {
+			 OrganisationUnitGroupSet, meUser, DataStoreService) {
 
 		$scope.availablePeriods = [
 			{key: "LAST_3_MONTHS", value: 3},
@@ -37,22 +37,11 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 
 		var orgunitsInfo = {};
 
-		var getUserId = function() {
-			// Get current user id
-			return meUser.get({fields: 'id'}).$promise
-				.then(function(user){
-					return user.id;
-				});
-		};
-
 		var loadUserSettings = function() {
-			return getUserId().then(function(userid){
-				DataStore.get({namespace:"project_manager", key: userid}).$promise
-					.then(function(userSettings) {
-						selectedPeriod = userSettings.availableData.period;
-						selectedFilters = userSettings.availableData.filters;
-						console.log(userSettings);
-					});
+			return DataStoreService.getCurrentUserSettings().then(function(userSettings) {
+				selectedPeriod = userSettings.availableData.period;
+				selectedFilters = userSettings.availableData.filters;
+				console.log(userSettings);
 			});
 		};
 
