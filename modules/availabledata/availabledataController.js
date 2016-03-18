@@ -33,15 +33,20 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			{id:"BtFXTpKRl6n", name: "1. Health Service"}
 		];
 
-		var selectedFilters = [];
+		var selectedFilters = {};
 
 		var orgunitsInfo = {};
 
 		var loadUserSettings = function() {
 			return DataStoreService.getCurrentUserSettings().then(function(userSettings) {
-				selectedPeriod = userSettings.availableData.period;
-				selectedFilters = userSettings.availableData.filters;
-				console.log(userSettings);
+				if(userSettings.availableData.period != null)
+					selectedPeriod = userSettings.availableData.period;
+				if(userSettings.availableData.filters != null)
+					selectedFilters = userSettings.availableData.filters;
+				console.log(selectedFilters);
+			},
+			function(error){
+				console.log("There are not settings for current user");
 			});
 		};
 
@@ -172,8 +177,8 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			// Show complete hierarchy
 			query = query + "&hierarchyMeta=true&displayProperty=NAME";
 
-			angular.forEach(selectedFilters, function(filter){
-				query = query + "&filter=" + filter.key + ":" + filter.value;
+			angular.forEach(selectedFilters, function(option, filterid){
+				query = query + "&filter=" + filterid + ":" + option.id;
 			});
 
 			return query;
@@ -245,18 +250,40 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			return (orgunitRow.find(".children-loading-icon"));
 		};
 
-		$scope.showSettings = function(){
-			$("#availableDataSettings").modal();
-
+		var printSettings = function(){
 			// Preselect period
 			var periodLabel = $("#" + selectedPeriod);
 			periodLabel.addClass("active");
 			periodLabel.find("input").attr('checked', 'checked');
 
 			// Preselect filters
-			angular.forEach(selectedFilters, function(filter){
-				$("#" + filter.key).find("option[value='" + filter.value + "']").attr("selected", "selected");
+			angular.forEach($scope.availableFilters, function(filter){
+				filter.selected = selectedFilters[filter.id];
 			});
+		};
+
+		$scope.modifyFilter = function(filterid, optionid){
+			var filterSetting = {};
+			if(optionid === undefined){
+				delete selectedFilters[filterid];
+			} else {
+				// Update filter information
+				selectedFilters[filterid] = optionid;
+
+				var filterValue = {};
+				filterValue[filterid] = optionid;
+				filterSetting = {
+					"key": "filters",
+					"value": filterValue
+				};
+			}
+
+			DataStoreService.updateCurrentUserSettings("availableData", filterSetting)
+				.then(function () {
+					console.log("settings updated");
+				});
+
+			loadTable();
 		};
 
 		$scope.updateSettings = function() {
@@ -264,20 +291,10 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			var periodId = $("#periodSelector").find("label.active").attr("id");
 			selectedPeriod = periodId;
 
-			// Update filter information
-			selectedFilters = [];
-			var filters = $(".filter-select");
-			$.each(filters, function(index, filter){
-				selectedFilters.push({
-					key: $(filter).attr("id"),
-					value: $(filter).find("option:selected").val()
-				})
-			});
-
 			$("#availableDataSettings").modal("hide");
 			loadTable();
 		};
 
 		// Initialize table
-		loadUserSettings().then(loadFilters).then(loadTable);
+		loadUserSettings().then(loadFilters).then(printSettings).then(loadTable);
 }]);

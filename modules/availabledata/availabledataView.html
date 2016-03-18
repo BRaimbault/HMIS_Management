@@ -17,10 +17,35 @@
    You should have received a copy of the GNU General Public License
    along with Project Manager.  If not, see <http://www.gnu.org/licenses/>. -->
 
-<h2>{{ 'AVAILABLE_DATA' | translate}}
-	<button class="btn btn-default" ng-click="showSettings()">Settings <span class="glyphicon glyphicon-cog"></span></button>
-</h2>
+<h2>{{ 'AVAILABLE_DATA' | translate}}</h2>
 
+<div class="row">
+	<div class="col-md-12">
+		<div class="panel panel-default" ng-repeat="filter in availableFilters">
+			<div class="panel-body">
+				<div class="row form-inline">
+					<div class="col-md-6">
+						<label for="{{filter.id}}">{{filter.name}}</label>
+						<select id="{{filter.id}}" class="filter-select form-control"
+								ng-model="filter.selected" ng-change="modifyFilter(filter.id, filter.selected)"
+								ng-options="option as option.name for option in filter.organisationUnitGroups
+									| orderBy:'name' track by option.id">
+							<option value="">-</option>
+						</select>
+					</div>
+					<div class="col-md-6">
+						<label for="periodSelector">Number of months:</label>
+						<div id="periodSelector" class="btn-group" data-toggle="buttons">
+							<label ng-repeat="period in availablePeriods" id="{{period.key}}" class="btn btn-default">
+								<input type="radio" name="options" autocomplete="off"> {{period.value}}
+							</label>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
 <table class="table table-bordered table-condensed table-hover" ng-show="tableDisplayed">
 	<thead>
 		<tr>
@@ -42,51 +67,3 @@
 </table>
 
 <d2-progressbar></d2-progressbar>
-
-<!-- Settings modal -->
-<div class="modal" data-backdrop="static" id="availableDataSettings" role="dialog">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h4 class="modal-title">Settings</h4>
-			</div>
-			<div class="modal-body">
-				<div class="row">
-					<div class="col-md-6">
-						<div class="panel panel-default" ng-repeat="filter in availableFilters">
-							<div class="panel-body">
-								<h4>{{filter.name}}</h4>
-								<div class="row">
-									<select id="{{filter.id}}" class="filter-select form-control">
-										<option value="">-</option>
-										<option ng-repeat="option in filter.organisationUnitGroups | orderBy:'name'"
-												value="{{option.id}}">
-											{{option.name}}
-										</option>
-									</select>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-md-6">
-						<div class="panel panel-default">
-							<div class="panel-body">
-								<h4>Number of months:</h4>
-								<div class="row">
-									<div id="periodSelector" class="btn-group" data-toggle="buttons">
-										<label ng-repeat="period in availablePeriods" id="{{period.key}}" class="btn btn-default">
-											<input type="radio" name="options" autocomplete="off"> {{period.value}}
-										</label>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-primary" ng-click="updateSettings()">{{ 'IMPORT' | translate }}</button>
-			</div>
-		</div>
-	</div>
-</div>

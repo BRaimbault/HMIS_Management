@@ -258,5 +258,6 @@ Dhis2Api.factory("DataStore",['$resource','commonvariable', function ($resource,
 		{
 			namespace:'namespace',
 			key:'key'
-		});
+		},
+		{ put: { method: "PUT"} });
 }]);

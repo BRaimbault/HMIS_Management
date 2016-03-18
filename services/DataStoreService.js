@@ -18,7 +18,6 @@ appManagerMSF.factory("DataStoreService", ['DataStore','meUser', '$q', function(
 
     var getCurrentUserSettings = function() {
         return getUserId().then(function(userid){
-            console.log("userId got " + userid);
             return DataStore.get({namespace: namespace, key: userid}).$promise
         });
     };
@@ -50,12 +49,13 @@ appManagerMSF.factory("DataStoreService", ['DataStore','meUser', '$q', function(
                 console.log("creating new user settings");
                 console.log(userSettings);
                 return getUserId().then(function(userid){
-                    return DataStore.post({namespace:namespace, key:userid}, userSettings);
+                    return DataStore.save({namespace:namespace, key:userid}, userSettings);
                 });
             });
     };
 
     return {
-        getCurrentUserSettings: getCurrentUserSettings
+        getCurrentUserSettings: getCurrentUserSettings,
+        updateCurrentUserSettings: updateCurrentUserSettings
     };
 }]);
