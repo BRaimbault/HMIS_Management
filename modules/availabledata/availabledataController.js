@@ -190,14 +190,14 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 		};
 
 
-		$scope.isClicked = function(parentIds){
-			var parentsClicked = true;
-			$.each(parentIds, function(index, parentId){
-				if(!orgunitsInfo[parentId].clicked === true){
-					parentsClicked = false;
+		$scope.isClicked = function(orgunitIds){
+			var clicked = true;
+			$.each(orgunitIds, function(index, orgunitId){
+				if(!orgunitsInfo[orgunitId].clicked === true){
+					clicked = false;
 				}
 			});
-			return parentsClicked;
+			return clicked;
 		};
 			
 		$scope.clickOrgunit = function(orgunitId){
@@ -209,9 +209,6 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 					loadChildren(orgunitId);
 				}
 			}
-
-			// Toggle between plus and minus icons
-			$("#ou_" + orgunitId).find("span.ou-prefix").toggleClass("glyphicon-plus glyphicon-minus ");
 		};
 
 		var loadChildren = function(orgunitId) {
