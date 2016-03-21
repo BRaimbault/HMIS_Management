@@ -17,17 +17,19 @@
    along with Project Manager.  If not, see <http://www.gnu.org/licenses/>. */
 
 
-appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$parse", "$animate", "commonvariable",
-	"DataElementGroupsUID", "Organisationunit", "OrganisationUnitGroupSet", "meUser", "DataStoreService",
-	function($scope, $q, $http, $parse, $animate, commonvariable, DataElementGroupsUID, Organisationunit,
+appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$parse", "commonvariable",
+	"Organisationunit", "OrganisationUnitGroupSet", "meUser", "DataStoreService",
+	function($scope, $q, $http, $parse, commonvariable, Organisationunit,
 			 OrganisationUnitGroupSet, meUser, DataStoreService) {
 
 		$scope.availablePeriods = [
-			{key: "LAST_3_MONTHS", value: 3},
-			{key: "LAST_6_MONTHS", value: 6},
-			{key: "LAST_12_MONTHS", value: 12}
+			{id: "LAST_3_MONTHS", name: 3},
+			{id: "LAST_6_MONTHS", name: 6},
+			{id: "LAST_12_MONTHS", name: 12}
 		];
-		var selectedPeriod = "LAST_12_MONTHS";
+		$scope.selectedPeriod = {
+			id: "LAST_12_MONTHS"
+		};
 
 		$scope.availableFilters = [
 			{id:"BtFXTpKRl6n", name: "1. Health Service"}
@@ -40,10 +42,9 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 		var loadUserSettings = function() {
 			return DataStoreService.getCurrentUserSettings().then(function(userSettings) {
 				if(userSettings.availableData.period != null)
-					selectedPeriod = userSettings.availableData.period;
+					$scope.selectedPeriod = userSettings.availableData.period;
 				if(userSettings.availableData.filters != null)
 					selectedFilters = userSettings.availableData.filters;
-				console.log(selectedFilters);
 			},
 			function(error){
 				console.log("There are not settings for current user");
@@ -58,6 +59,10 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 				}).$promise
 				.then(function(result){
 					$scope.availableFilters = result.organisationUnitGroupSets;
+					// Preselect filters
+					angular.forEach($scope.availableFilters, function(filter){
+						filter.selected = selectedFilters[filter.id];
+					});
 				});
 		};
 
@@ -105,7 +110,7 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 								$scope.progressbarDisplayed = false;
 
 								// Make visible orgunits under dataViewOrgunit
-								$parse(dataViewOrgUnit.id).assign($scope, true);
+								orgunitsInfo[dataViewOrgUnit.id].clicked = true;
 							}
 						});
 				});
@@ -131,7 +136,7 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 					id: orgunit,
 					name: analytics.metaData.names[orgunit],
 					fullName: fullName,
-					parents: parentArray.join(" && "),
+					parents: parentArray,
 					level: orgunitsInfo[orgunit].level,
 					relativeLevel: parentArray.length,
 					isLastLevel: orgunitsInfo[orgunit].children.length === 0,
@@ -171,7 +176,7 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			});
 
 			// Add the period parameter: last 6 months
-			query = query + "&dimension=pe:" + selectedPeriod;
+			query = query + "&dimension=pe:" + $scope.selectedPeriod.id;
 			// Add the aggregation type: count
 			query = query + "&aggregationType=COUNT";
 			// Show complete hierarchy
@@ -183,16 +188,23 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 
 			return query;
 		};
+
+
+		$scope.isClicked = function(parentIds){
+			var parentsClicked = true;
+			$.each(parentIds, function(index, parentId){
+				if(!orgunitsInfo[parentId].clicked === true){
+					parentsClicked = false;
+				}
+			});
+			return parentsClicked;
+		};
 			
 		$scope.clickOrgunit = function(orgunitId){
-
-			var showChildren = $parse(orgunitId);
-
-			// Check current state of parameter
-			if(showChildren($scope) === true){
-				showChildren.assign($scope, false);
+			if(orgunitsInfo[orgunitId].clicked){
+				orgunitsInfo[orgunitId].clicked = false;
 			} else {
-				showChildren.assign($scope, true);
+				orgunitsInfo[orgunitId].clicked = true;
 				if(!childrenLoaded(orgunitId)){
 					loadChildren(orgunitId);
 				}
@@ -236,7 +248,7 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 
 		var childrenLoaded = function(orgunitId){
 			var children = orgunitsInfo[orgunitId].children;
-			for(i = 0; i < children.length; i++){
+			for(var i = 0; i < children.length; i++){
 				if(orgunitsInfo[children[i].id] != undefined) {
 					return true;
 				}
@@ -250,28 +262,16 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			return (orgunitRow.find(".children-loading-icon"));
 		};
 
-		var printSettings = function(){
-			// Preselect period
-			var periodLabel = $("#" + selectedPeriod);
-			periodLabel.addClass("active");
-			periodLabel.find("input").attr('checked', 'checked');
-
-			// Preselect filters
-			angular.forEach($scope.availableFilters, function(filter){
-				filter.selected = selectedFilters[filter.id];
-			});
-		};
-
-		$scope.modifyFilter = function(filterid, optionid){
+		$scope.modifyFilter = function(filter){
 			var filterSetting = {};
-			if(optionid === undefined){
-				delete selectedFilters[filterid];
+			if(filter.selected === undefined){
+				delete selectedFilters[filter.id];
 			} else {
 				// Update filter information
-				selectedFilters[filterid] = optionid;
+				selectedFilters[filter.id] = filter.selected;
 
 				var filterValue = {};
-				filterValue[filterid] = optionid;
+				filterValue[filter.id] = filter.selected;
 				filterSetting = {
 					"key": "filters",
 					"value": filterValue
@@ -286,15 +286,26 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			loadTable();
 		};
 
-		$scope.updateSettings = function() {
-			// Update period information
-			var periodId = $("#periodSelector").find("label.active").attr("id");
-			selectedPeriod = periodId;
+		$scope.modifyPeriod = function(period){
+			$scope.selectedPeriod = {
+				id: period.id,
+				name: period.name
+			};
 
-			$("#availableDataSettings").modal("hide");
+			var periodSetting = {
+				"key": "period",
+				"value": $scope.selectedPeriod
+			};
+
+			DataStoreService.updateCurrentUserSettings("availableData", periodSetting)
+				.then(function() {
+					console.log("settings updated");
+				});
+
 			loadTable();
 		};
 
 		// Initialize table
-		loadUserSettings().then(loadFilters).then(printSettings).then(loadTable);
-}]);
+		loadUserSettings().then(loadFilters).then(loadTable);
+	}
+]);
