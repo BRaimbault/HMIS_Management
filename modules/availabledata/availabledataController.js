@@ -18,9 +18,9 @@
 
 
 appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$parse", "commonvariable",
-	"Organisationunit", "OrganisationUnitGroupSet", "meUser", "DataStoreService",
+	"Organisationunit", "OrganisationUnitGroupSet", "meUser", "DataStoreService", "AnalyticsService",
 	function($scope, $q, $http, $parse, commonvariable, Organisationunit,
-			 OrganisationUnitGroupSet, meUser, DataStoreService) {
+			 OrganisationUnitGroupSet, meUser, DataStoreService, AnalyticsService) {
 
 		$scope.availablePeriods = [
 			{id: "LAST_3_MONTHS", name: 3},
@@ -85,23 +85,23 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 				var k = dataViewOrgUnits.length;
 				var currentOu = 0;
 				angular.forEach(dataViewOrgUnits, function(dataViewOrgUnit){
-					var queryParent = constructQuerySingleOrgunit(dataViewOrgUnit);
-					var queryChildren = constructQuery(dataViewOrgUnit.children);
+					var parentPromise = AnalyticsService.queryAvailableData(dataViewOrgUnit, $scope.selectedPeriod, selectedFilters);
+					var childrenPromise = AnalyticsService.queryAvailableData(dataViewOrgUnit.children, $scope.selectedPeriod, selectedFilters);
 
 					// Add orgunits to orgunitsInfo. That info will be required later.
 					orgunitsInfo[dataViewOrgUnit.id] = dataViewOrgUnit;
 					$.map(dataViewOrgUnit.children, function(child){orgunitsInfo[child.id] = child;});
 
-					$q.all([$http.get(queryParent), $http.get(queryChildren)])
+					$q.all([parentPromise, childrenPromise])
 						.then(function(analyticsData){
-							var parentResult = analyticsData[0].data;
-							var childrenResult = analyticsData[1].data;
+							var parentResult = analyticsData[0];
+							var childrenResult = analyticsData[1];
 
 							// Generate public period array. It is required for other functions
 							regenerateScopePeriodArray(parentResult);
 
-							var parentRows = formatAnalyticsResult(parentResult);
-							var childrenRows = formatAnalyticsResult(childrenResult);
+							var parentRows = AnalyticsService.formatAnalyticsResult(parentResult, orgunitsInfo);
+							var childrenRows = AnalyticsService.formatAnalyticsResult(childrenResult, orgunitsInfo);
 							$scope.tableRows = $scope.tableRows.concat(parentRows).concat(childrenRows);
 
 							// Check if last dataViewOrgunit
@@ -117,41 +117,6 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			});
 		};
 
-
-
-		var formatAnalyticsResult = function (analytics) {
-			var orgunits = {};
-			angular.forEach(analytics.metaData.ou, function(orgunit) {
-				var parents = analytics.metaData.ouHierarchy[orgunit];
-
-				var parentArray = parents.split("/");
-				parentArray.shift();
-
-				var fullName = parentArray.map(function (parent) {
-					return analytics.metaData.names[parent];
-				}).join("/").concat("/" + analytics.metaData.names[orgunit])
-					.replace(/\ /g, "_");
-
-				orgunits[orgunit] = {
-					id: orgunit,
-					name: analytics.metaData.names[orgunit],
-					fullName: fullName,
-					parents: parentArray,
-					level: orgunitsInfo[orgunit].level,
-					relativeLevel: parentArray.length,
-					isLastLevel: orgunitsInfo[orgunit].children.length === 0,
-					data: {}
-				}
-			});
-
-			// Include data. Data is in "rows" attribute as an array with the syntax [orgunitid, period, value]
-			angular.forEach(analytics.rows, function(row){
-				orgunits[row[0]].data[row[1]] = row[2];
-			});
-
-			return $.map(orgunits, function(orgunit, id){ return [orgunit]; })
-		};
-
 		var regenerateScopePeriodArray = function (analyticsResponse) {
 			$scope.periods = [];
 			angular.forEach(analyticsResponse.metaData.pe, function(pe){
@@ -161,34 +126,6 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 				})
 			});
 		};
-
-		var constructQuerySingleOrgunit = function(orgunit){
-			return constructQuery([orgunit]);
-		};
-
-		var constructQuery = function(orgunitList){
-			var query = commonvariable.url + "analytics.json";
-
-			// Include list of orgunits
-			query = query + "?dimension=ou:";
-			angular.forEach(orgunitList, function(orgunit){
-				query = query + orgunit.id + ";";
-			});
-
-			// Add the period parameter: last 6 months
-			query = query + "&dimension=pe:" + $scope.selectedPeriod.id;
-			// Add the aggregation type: count
-			query = query + "&aggregationType=COUNT";
-			// Show complete hierarchy
-			query = query + "&hierarchyMeta=true&displayProperty=NAME";
-
-			angular.forEach(selectedFilters, function(option, filterid){
-				query = query + "&filter=" + filterid + ":" + option.id;
-			});
-
-			return query;
-		};
-
 
 		$scope.isClicked = function(orgunitIds){
 			var clicked = true;
@@ -221,7 +158,8 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 				filter: "id:in:[" + orgunitsInfo[orgunitId].children.map(function(child){return child.id;}).join(",") + "]"
 			}).$promise;
 
-			var childrenQuery = $http.get(constructQuery(orgunitsInfo[orgunitId].children));
+			var childrenQuery = AnalyticsService.queryAvailableData(orgunitsInfo[orgunitId].children, $scope.selectedPeriod,
+				selectedFilters);
 
 			$q.all([childrenInfo, childrenQuery])
 				.then(function(data){
@@ -232,8 +170,8 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 					});
 
 					// Add analytics information to table
-					var childrenResult = data[1].data;
-					var childrenRows = formatAnalyticsResult(childrenResult);
+					var childrenResult = data[1];
+					var childrenRows = AnalyticsService.formatAnalyticsResult(childrenResult, orgunitsInfo);
 					$scope.tableRows = $scope.tableRows.concat(childrenRows);
 
 				})
