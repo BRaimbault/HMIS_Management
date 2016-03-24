@@ -100,8 +100,8 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 							// Generate public period array. It is required for other functions
 							regenerateScopePeriodArray(parentResult);
 
-							var parentRows = AnalyticsService.formatAnalyticsResult(parentResult, orgunitsInfo);
-							var childrenRows = AnalyticsService.formatAnalyticsResult(childrenResult, orgunitsInfo);
+							var parentRows = AnalyticsService.formatAnalyticsResult(parentResult, orgunitsInfo, true);
+							var childrenRows = AnalyticsService.formatAnalyticsResult(childrenResult, orgunitsInfo, false);
 							$scope.tableRows = $scope.tableRows.concat(parentRows).concat(childrenRows);
 
 							// Check if last dataViewOrgunit
@@ -171,7 +171,7 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 
 					// Add analytics information to table
 					var childrenResult = data[1];
-					var childrenRows = AnalyticsService.formatAnalyticsResult(childrenResult, orgunitsInfo);
+					var childrenRows = AnalyticsService.formatAnalyticsResult(childrenResult, orgunitsInfo, false);
 					$scope.tableRows = $scope.tableRows.concat(childrenRows);
 
 				})

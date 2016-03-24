@@ -37,14 +37,12 @@ appManagerMSF.factory("AnalyticsService", ['AnalyticsEngine', function(Analytics
         return parameters;
     };
 
-    var formatAnalyticsResult = function(analytics, orgunitsInfo){
+    var formatAnalyticsResult = function(analytics, orgunitsInfo, isRoot){
         var orgunits = {};
         angular.forEach(analytics.metaData.ou, function(orgunit) {
             var parents = analytics.metaData.ouHierarchy[orgunit];
 
-            console.log(parents);
-
-            if(parents.endsWith("/" + orgunit)){
+            if(isRoot){
                 parents = "";
             }
 
