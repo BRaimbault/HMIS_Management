@@ -255,7 +255,12 @@ Dhis2Api.factory("DataElementGroupsUID",['$resource','commonvariable', function 
 }]);
 
 Dhis2Api.factory("OrganisationUnitGroupSet",['$resource','commonvariable', function ($resource,commonvariable) {
-	return $resource( commonvariable.url+"organisationUnitGroupSets" );
+	return $resource( commonvariable.url+"organisationUnitGroupSets/:groupsetid",
+		{groupsetid: '@groupsetid'});
+}]);
+
+Dhis2Api.factory("OrganisationUnitGroup",['$resource','commonvariable', function ($resource,commonvariable) {
+	return $resource( commonvariable.url+"organisationUnitGroups" );
 }]);
 
 Dhis2Api.factory("DataStore",['$resource','commonvariable', function ($resource,commonvariable) {

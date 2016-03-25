@@ -85,7 +85,8 @@
 	
 	"_______________ Available":" data_____________",
 	"AVAILABLE_DATA":"Données disponibles",
-	"ORGANISATIONUNIT_LABEL": "Unité d'organisation",
+	"NUMBER_OF_MONTHS": "Nombre de mois",
+  	"ORGANISATIONUNIT_LABEL": "Unité d'organisation",
 	
 	"_______________ Directive ":" DataSet_____________",
 	"DATASET": "Ensemble de données",

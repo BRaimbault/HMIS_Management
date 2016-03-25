@@ -18,9 +18,9 @@
 
 
 appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$parse", "commonvariable",
-	"Organisationunit", "OrganisationUnitGroupSet", "meUser", "DataStoreService", "AnalyticsService",
+	"Organisationunit", "OrganisationUnitGroupSet", "OrgunitGroupSetService", "meUser", "DataStoreService", "AnalyticsService",
 	function($scope, $q, $http, $parse, commonvariable, Organisationunit,
-			 OrganisationUnitGroupSet, meUser, DataStoreService, AnalyticsService) {
+			 OrganisationUnitGroupSet, OrgunitGroupSetService, meUser, DataStoreService, AnalyticsService) {
 
 		$scope.availablePeriods = [
 			{id: "LAST_3_MONTHS", name: 3},
@@ -52,13 +52,9 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 		};
 
 		var loadFilters = function(){
-			return OrganisationUnitGroupSet.get({
-					filter: "id:in:[" + $scope.availableFilters.map(function(filter){return filter.id;}).join(",") + "]",
-					fields: "name,id,organisationUnitGroups[name,id]",
-					paging: false
-				}).$promise
-				.then(function(result){
-					$scope.availableFilters = result.organisationUnitGroupSets;
+			return OrgunitGroupSetService.getOrgunitGroupSets($scope.availableFilters)
+				.then(function(filters){
+					$scope.availableFilters = filters;
 					// Preselect filters
 					angular.forEach($scope.availableFilters, function(filter){
 						filter.selected = selectedFilters[filter.id];
@@ -204,14 +200,12 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			} else {
 				// Update filter information
 				selectedFilters[filter.id] = filter.selected;
-
-				var filterValue = {};
-				filterValue[filter.id] = filter.selected;
-				filterSetting = {
-					"key": "filters",
-					"value": filterValue
-				};
 			}
+
+			filterSetting = {
+				"key": "filters",
+				"value": selectedFilters
+			};
 
 			DataStoreService.updateCurrentUserSettings("availableData", filterSetting)
 				.then(function () {

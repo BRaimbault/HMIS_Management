@@ -38,7 +38,6 @@ appManagerMSF.factory("DataStoreService", ['DataStore','meUser', '$q', function(
                     userSettings[module] = {};
                 userSettings[module][property.key] = property.value;
                 console.log("updating user settings");
-                console.log(userSettings);
                 return getUserId().then(function(userid){
                     return DataStore.put({namespace:namespace, key:userid}, userSettings);
                 });
