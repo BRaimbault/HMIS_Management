@@ -28,7 +28,7 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			{id: "LAST_12_MONTHS", name: 12}
 		];
 		$scope.selectedPeriod = {
-			id: "LAST_12_MONTHS"
+			id: "LAST_6_MONTHS"
 		};
 
 		$scope.availableFilters = [
@@ -100,13 +100,13 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 							var childrenRows = AnalyticsService.formatAnalyticsResult(childrenResult, orgunitsInfo, false);
 							$scope.tableRows = $scope.tableRows.concat(parentRows).concat(childrenRows);
 
+							// Make visible orgunits under dataViewOrgunit
+							orgunitsInfo[dataViewOrgUnit.id].clicked = true;
+
 							// Check if last dataViewOrgunit
 							if(k === ++currentOu){
 								$scope.tableDisplayed = true;
 								$scope.progressbarDisplayed = false;
-
-								// Make visible orgunits under dataViewOrgunit
-								orgunitsInfo[dataViewOrgUnit.id].clicked = true;
 							}
 						});
 				});

@@ -1,5 +1,15 @@
 appManagerMSF.factory("AnalyticsService", ['AnalyticsEngine', function(AnalyticsEngine) {
 
+    /**
+     * Performs a query to analytics endpoint with the parameters provided.
+     * Orgunit and period are passed as "dimensions". Filters are passed as "filters".
+     * Other options: aggregationType=COUNT, hierarchyMeta=true, displayProperty=NAME
+     *
+     * @param orgunit - Orgunit object or array of orgunits. Orgunit = { "id": "jalskdfjfas", ...}
+     * @param period - Period = { "id": "LAST_6_MONTHS", ... }
+     * @param filters - Filters = { "filterid": {"id": "optionid",...}, ... {"adsfjdsfjk": {"id": "sdflkasdfj",...}}
+     * @returns {*|n} - Result of analytics endpoint
+     */
     var queryAvailableData = function(orgunit, period, filters){
         var analyticsParameters = buildAnalyticsParameters(orgunit, period, filters);
 
@@ -37,6 +47,28 @@ appManagerMSF.factory("AnalyticsService", ['AnalyticsEngine', function(Analytics
         return parameters;
     };
 
+    /**
+     * This method formats the analytics response in the following format:
+     * result = [
+     *  id: orgunit_id (jakdsf3jk43j),
+     *  name: orgunit_name (SHABUNDA),
+     *  fullName: hierarchy (OCBA/DRC/SHABUNDA, depends on the dataViewOrgunit of the user),
+     *  parents: parents_id (["bioweri34oi", "lsjjdslfkj23"]),
+     *  level: orgunit_level (4),
+     *  relativeLevel: relative_to_root (2, OCBA->0, DRC->1),
+     *  isLastLevel: if_has_children (false),
+     *  data: {
+     *      "201501": "1098",
+     *      "201502": "890",
+     *      ...
+     *      "201512": "897"
+     *  }
+     *
+     * @param analytics - Result of analytics
+     * @param orgunitsInfo - Array of information related to orgunits
+     * @param isRoot - true/false, if the orgunit(s) is/are root or not
+     * @returns {*} - Result data structure
+     */
     var formatAnalyticsResult = function(analytics, orgunitsInfo, isRoot){
         var orgunits = {};
         angular.forEach(analytics.metaData.ou, function(orgunit) {
@@ -51,8 +83,12 @@ appManagerMSF.factory("AnalyticsService", ['AnalyticsEngine', function(Analytics
 
             var fullName = parentArray.map(function (parent) {
                 return analytics.metaData.names[parent];
-            }).join("/").concat("/" + analytics.metaData.names[orgunit])
-                .replace(/\ /g, "_");
+            }).join("/");
+
+            if(fullName == "") fullName = fullName.concat(analytics.metaData.names[orgunit]);
+            else fullName = fullName.concat("/" + analytics.metaData.names[orgunit]);
+
+            fullName = fullName.replace(/\ /g, "_");
 
             orgunits[orgunit] = {
                 id: orgunit,

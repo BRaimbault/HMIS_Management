@@ -1,5 +1,12 @@
 appManagerMSF.factory("OrgunitGroupSetService", ['OrganisationUnitGroupSet','OrganisationUnitGroup','$q', function(OrganisationUnitGroupSet, OrganisationUnitGroup, $q) {
 
+    /**
+     * It returns and array of organisationUnitGroupsSets. The structure of each groupSet is the same that querying
+     * the endpoint "api/organisationUnitGroupSets/:uid", and the names for both groupSet and groups are translated.
+     *
+     * @param groupSets - Array of organisationUnitGroupSets. OrgunitGroupSet = {"id": "ddslkfjdfsjk",...}
+     * @returns {*} - Array of organisationUnitGroupSets with name and children[id, name]
+     */
     var getOrgunitGroupSets = function(groupSets){
         var promiseArray = [];
         angular.forEach(groupSets, function(groupSet){
