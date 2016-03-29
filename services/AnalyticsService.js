@@ -3,7 +3,7 @@ appManagerMSF.factory("AnalyticsService", ['AnalyticsEngine', function(Analytics
     /**
      * Performs a query to analytics endpoint with the parameters provided.
      * Orgunit and period are passed as "dimensions". Filters are passed as "filters".
-     * Other options: aggregationType=COUNT, hierarchyMeta=true, displayProperty=NAME
+     * Other options: aggregationType=COUNT, hierarchyMeta=TRUE, displayProperty=NAME
      *
      * @param orgunit - Orgunit object or array of orgunits. Orgunit = { "id": "jalskdfjfas", ...}
      * @param period - Period = { "id": "LAST_6_MONTHS", ... }
@@ -33,7 +33,7 @@ appManagerMSF.factory("AnalyticsService", ['AnalyticsEngine', function(Analytics
         ];
 
         parameters.aggregationType = "COUNT";
-        parameters.hierarchyMeta = true;
+        parameters.hierarchyMeta = "TRUE";
         parameters.displayProperty = "NAME";
 
         if(filters !== null){
@@ -66,25 +66,14 @@ appManagerMSF.factory("AnalyticsService", ['AnalyticsEngine', function(Analytics
      *
      * @param analytics - Result of analytics
      * @param orgunitsInfo - Array of information related to orgunits
-     * @param isRoot - true/false, if the orgunit(s) is/are root or not
-     * @param hierarchy - hierarchy, like "fiasdfl3fj/aldfkjlskf" (parents). Only applicable if isRoot == false
+     * @param hierarchy - hierarchy arrya, like ["fiasdfl3fj","aldfkjlskf"] (parents). Only applicable if isRoot == false
      * @returns {*} - Result data structure
      */
-    var formatAnalyticsResult = function(analytics, orgunitsInfo, isRoot, hierarchy){
+    var formatAnalyticsResult = function(analytics, orgunitsInfo, hierarchy){
         var orgunits = {};
         angular.forEach(analytics.metaData.ou, function(orgunit) {
-            var parents = analytics.metaData.ouHierarchy[orgunit];
 
-            if(isRoot){
-                parents = "";
-            } else {
-                parents = "/" + hierarchy + parents.split(hierarchy)[1];
-            }
-
-            var parentArray = parents.split("/");
-            parentArray.shift();
-
-            var fullName = parentArray.map(function (parent) {
+            var fullName = hierarchy.map(function (parent) {
                 return analytics.metaData.names[parent];
             }).join("/");
 
@@ -97,9 +86,9 @@ appManagerMSF.factory("AnalyticsService", ['AnalyticsEngine', function(Analytics
                 id: orgunit,
                 name: analytics.metaData.names[orgunit],
                 fullName: fullName,
-                parents: parentArray,
+                parents: hierarchy,
                 level: orgunitsInfo[orgunit].level,
-                relativeLevel: parentArray.length,
+                relativeLevel: hierarchy.length,
                 isLastLevel: orgunitsInfo[orgunit].children.length === 0,
                 data: {}
             }
