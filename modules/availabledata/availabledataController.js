@@ -96,8 +96,8 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 							// Generate public period array. It is required for other functions
 							regenerateScopePeriodArray(parentResult);
 
-							var parentRows = AnalyticsService.formatAnalyticsResult(parentResult, orgunitsInfo, true);
-							var childrenRows = AnalyticsService.formatAnalyticsResult(childrenResult, orgunitsInfo, false);
+							var parentRows = AnalyticsService.formatAnalyticsResult(parentResult, orgunitsInfo, true, null);
+							var childrenRows = AnalyticsService.formatAnalyticsResult(childrenResult, orgunitsInfo, false, dataViewOrgUnit.id);
 							$scope.tableRows = $scope.tableRows.concat(parentRows).concat(childrenRows);
 
 							// Make visible orgunits under dataViewOrgunit
@@ -133,28 +133,28 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 			return clicked;
 		};
 			
-		$scope.clickOrgunit = function(orgunitId){
-			if(orgunitsInfo[orgunitId].clicked){
-				orgunitsInfo[orgunitId].clicked = false;
+		$scope.clickOrgunit = function(orgunit){
+			if(orgunitsInfo[orgunit.id].clicked){
+				orgunitsInfo[orgunit.id].clicked = false;
 			} else {
-				orgunitsInfo[orgunitId].clicked = true;
-				if(!childrenLoaded(orgunitId)){
-					loadChildren(orgunitId);
+				orgunitsInfo[orgunit.id].clicked = true;
+				if(!childrenLoaded(orgunit.id)){
+					loadChildren(orgunit);
 				}
 			}
 		};
 
-		var loadChildren = function(orgunitId) {
+		var loadChildren = function(orgunit) {
 			// Add a loading icon and save the reference
-			var loadingIcon = addLoadingIcon(orgunitId);
+			var loadingIcon = addLoadingIcon(orgunit.id);
 
 			var childrenInfo = Organisationunit.get({
 				paging: false,
 				fields: "id,name,level,children",
-				filter: "id:in:[" + orgunitsInfo[orgunitId].children.map(function(child){return child.id;}).join(",") + "]"
+				filter: "id:in:[" + orgunitsInfo[orgunit.id].children.map(function(child){return child.id;}).join(",") + "]"
 			}).$promise;
 
-			var childrenQuery = AnalyticsService.queryAvailableData(orgunitsInfo[orgunitId].children, $scope.selectedPeriod,
+			var childrenQuery = AnalyticsService.queryAvailableData(orgunitsInfo[orgunit.id].children, $scope.selectedPeriod,
 				selectedFilters);
 
 			$q.all([childrenInfo, childrenQuery])
@@ -167,7 +167,8 @@ appManagerMSF.controller('availabledataController', ["$scope", "$q", "$http", "$
 
 					// Add analytics information to table
 					var childrenResult = data[1];
-					var childrenRows = AnalyticsService.formatAnalyticsResult(childrenResult, orgunitsInfo, false);
+					var childrenRows = AnalyticsService.formatAnalyticsResult(childrenResult, orgunitsInfo, false,
+						orgunit.parents.join("/"));
 					$scope.tableRows = $scope.tableRows.concat(childrenRows);
 
 				})

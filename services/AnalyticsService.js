@@ -67,15 +67,18 @@ appManagerMSF.factory("AnalyticsService", ['AnalyticsEngine', function(Analytics
      * @param analytics - Result of analytics
      * @param orgunitsInfo - Array of information related to orgunits
      * @param isRoot - true/false, if the orgunit(s) is/are root or not
+     * @param hierarchy - hierarchy, like "fiasdfl3fj/aldfkjlskf" (parents). Only applicable if isRoot == false
      * @returns {*} - Result data structure
      */
-    var formatAnalyticsResult = function(analytics, orgunitsInfo, isRoot){
+    var formatAnalyticsResult = function(analytics, orgunitsInfo, isRoot, hierarchy){
         var orgunits = {};
         angular.forEach(analytics.metaData.ou, function(orgunit) {
             var parents = analytics.metaData.ouHierarchy[orgunit];
 
             if(isRoot){
                 parents = "";
+            } else {
+                parents = "/" + hierarchy + parents.split(hierarchy)[1];
             }
 
             var parentArray = parents.split("/");
